@@ -7,15 +7,16 @@ import { scenes } from "@/lib/content";
 import { currentTheme, THEME_EVENT, type Theme } from "@/lib/theme";
 
 // Two colours per scene; each particle picks a fixed mix between them.
-// Light: saturated inks, drawn ON a near-white page. Dark: neon glow on black.
+// Light: one hue per shape, in a tight vivid range, so the swarm reads as a single clean object —
+// mixing two distant hues here just looks muddy. Dark: neon glow on black.
 const PALETTES: Record<Theme, [string, string][]> = {
   light: [
-    ["#f97316", "#9a3412"], // sun
-    ["#1d4ed8", "#0c4a6e"], // solar panel
-    ["#047857", "#3f6212"], // battery
-    ["#0284c7", "#92400e"], // bolt
-    ["#4338ca", "#155e75"], // network
-    ["#047857", "#1e40af"], // globe
+    ["#fb923c", "#f97316"], // sun
+    ["#3b82f6", "#2563eb"], // solar panel
+    ["#10b981", "#059669"], // battery
+    ["#38bdf8", "#0ea5e9"], // bolt
+    ["#818cf8", "#6366f1"], // network
+    ["#34d399", "#3b82f6"], // globe
   ],
   dark: [
     ["#ffb347", "#ff5a1f"],
@@ -43,6 +44,7 @@ const vertexShader = /* glsl */ `
   uniform float uIntro;
   uniform float uSize;
   uniform float uPR;
+  uniform float uTwinkle;
   varying float vRand;
   varying float vTwinkle;
   varying vec3 vLogoCol;
@@ -67,7 +69,7 @@ const vertexShader = /* glsl */ `
     gl_Position = projectionMatrix * mv;
     gl_PointSize = uSize * aSize * uPR / -mv.z;
     vRand = aRand;
-    vTwinkle = 0.6 + 0.4 * sin(uTime * 1.7 + aRand * 40.0);
+    vTwinkle = 1.0 - uTwinkle + uTwinkle * (0.5 + 0.5 * sin(uTime * 1.7 + aRand * 40.0));
     vLogoCol = aLogoCol;
   }
 `;
@@ -88,8 +90,8 @@ const fragmentShader = /* glsl */ `
     float a = pow(1.0 - d * 2.0, 1.7);
     vec3 base = mix(uColA, uColB, vRand);
     base = mix(base, vLogoCol, uLogo);
-    // Dark: additive core blown out to white. Light: the core is deepened instead.
-    vec3 col = mix(base * (1.0 - pow(a, 4.0) * 0.28), base + pow(a, 5.0) * 0.55, uDark);
+    // Dark: additive core blown out to white. Light: flat ink, so overlapping points stay clean.
+    vec3 col = mix(base, base + pow(a, 5.0) * 0.55, uDark);
     gl_FragColor = vec4(col, a * vTwinkle * uOpacity);
   }
 `;
@@ -173,6 +175,7 @@ export default function ParticleScene() {
         uPR: { value: renderer.getPixelRatio() },
         uOpacity: { value: 1 },
         uDark: { value: 0 },
+        uTwinkle: { value: 0.4 },
         uLogo: { value: reduceMotion ? 0 : 1 },
         uColA: { value: colors[0][0].clone() },
         uColB: { value: colors[0][1].clone() },
@@ -210,7 +213,9 @@ export default function ParticleScene() {
         const dark = theme === "dark";
         uniforms.uDark.value = dark ? 1 : 0;
         uniforms.uOpacity.value = dark ? (mobile ? 0.6 : 1) : mobile ? 0.55 : 1;
-        uniforms.uSize.value = mobile ? 32 : dark ? 38 : 44;
+        uniforms.uSize.value = mobile ? 32 : dark ? 38 : 40;
+        // less per-particle flicker in light, where it reads as dirt rather than sparkle
+        uniforms.uTwinkle.value = dark ? 0.4 : 0.12;
         material.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
         material.needsUpdate = true;
         starMat.color.set(dark ? 0x9fb4d9 : 0x94a7c4);
