@@ -871,6 +871,19 @@ main {
     border-radius: 12px;
   }
 
+  .header__bar { background: var(--menu-bg); }
+
+  .header::before {
+    content: "";
+    position: absolute;
+    left: -50vw;
+    right: -50vw;
+    top: -16px;
+    height: 96px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(rgba(var(--veil), 0.92), rgba(var(--veil), 0));
+  }
   .header--open .header__nav { display: flex; }
   .header__cta { display: none; }
   .header__toggle { display: grid; }
@@ -883,9 +896,11 @@ main {
   .scene--contact {
     grid-template-columns: 1fr;
     min-height: auto;
-    padding: 46vh var(--pad) 90px;
-    row-gap: 28px;
+    padding: 34vh var(--pad) 48px;
+    row-gap: 24px;
   }
+
+  .scene--contact { padding-top: 26vh; }
 
   .scene__text,
   .scene--left .scene__text,
