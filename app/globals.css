@@ -897,7 +897,8 @@ main {
   .scene--contact {
     grid-template-columns: 1fr;
     min-height: 100svh;
-    padding: 40svh var(--pad) 48px;
+    /* Preserve room for the illustration, even on short phone screens. */
+    padding: clamp(250px, 40svh, 380px) var(--pad) 48px;
     row-gap: 22px;
     align-content: start;
   }
@@ -988,6 +989,38 @@ main {
   .scene--contact .form { grid-column: 1; grid-row: auto; }
   .form__row { grid-template-columns: 1fr; }
   .scroll-hint { display: none; }
+}
+
+/* Compact phones need a single, comfortably tappable CTA per row. */
+@media (max-width: 420px) {
+  .header {
+    top: 10px;
+    width: calc(100% - 20px);
+  }
+
+  .header::before { top: -10px; }
+  .header__bar { padding-left: 14px; }
+  .logo__img { height: 23px; }
+
+  .scene,
+  .scene--hero,
+  .scene--contact {
+    padding-top: clamp(250px, 42svh, 330px);
+    padding-bottom: 40px;
+  }
+
+  .scene--contact { padding-top: clamp(230px, 38svh, 300px); }
+
+  .actions { flex-direction: column; }
+  .actions .btn { width: 100%; }
+
+  .contact-list dd,
+  .lead,
+  .card__note { overflow-wrap: anywhere; }
+
+  .form { padding: 18px; border-radius: 18px; }
+  .form .btn { justify-self: stretch; width: 100%; justify-content: center; }
+  .footer { flex-direction: column; gap: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
