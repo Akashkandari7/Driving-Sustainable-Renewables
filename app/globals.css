@@ -890,17 +890,34 @@ main {
   .header__bar { gap: 10px; }
   .logo__tag { display: none; }
 
-  /* Shape floats in the top part of the screen; text scrolls up underneath it */
+  /* One screen per section: the shape owns the top ~40% and the copy sits directly under it,
+     so you never scroll through a dead band between a shape and its text. */
   .scene,
   .scene--hero,
   .scene--contact {
     grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 34vh var(--pad) 48px;
-    row-gap: 24px;
+    min-height: 100svh;
+    padding: 40svh var(--pad) 48px;
+    row-gap: 22px;
+    align-content: start;
   }
 
-  .scene--contact { padding-top: 26vh; }
+  .scene--contact { padding-top: 36svh; }
+
+  h1 { font-size: clamp(2rem, 8.8vw, 2.6rem); line-height: 1.08; margin-bottom: 16px; }
+  h2 { font-size: clamp(1.7rem, 7.6vw, 2.2rem); line-height: 1.12; margin-bottom: 14px; }
+
+  /* Solid ink instead of a gradient fill: headings sit right on top of the particles here */
+  h1,
+  h2 {
+    background: none;
+    color: var(--text);
+    -webkit-text-fill-color: var(--text);
+  }
+
+  .lead { font-size: 15px; margin-bottom: 20px; }
+  .eyebrow { letter-spacing: 0.1em; font-size: 10.5px; margin-bottom: 12px; }
+  .eyebrow::before { flex: none; width: 20px; }
 
   .scene__text,
   .scene--left .scene__text,
@@ -911,6 +928,13 @@ main {
     text-shadow: 0 2px 18px rgba(var(--veil), 0.95);
   }
 
+  .actions { gap: 10px; }
+  .actions .btn { flex: 1 1 auto; justify-content: center; padding: 13px 18px; }
+
+  .points { gap: 8px; }
+  .points li { font-size: 13px; padding: 7px 13px; }
+
+  /* Stat cards read as compact rows rather than two cramped columns */
   .scene__cards,
   .scene--left .scene__cards,
   .scene--right .scene__cards {
@@ -918,8 +942,8 @@ main {
     grid-row: auto;
     height: auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 10px;
     perspective: none;
   }
 
@@ -933,20 +957,33 @@ main {
   .card--a .card__inner,
   .card--b .card__inner {
     transform: none;
-    padding: 16px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 16px;
+    padding: 14px 18px;
+    border-radius: 14px;
   }
 
-  /* Solid ink instead of a gradient fill: headings sit right on top of the particles here */
-  h1,
-  h2 {
-    background: none;
-    color: var(--text);
-    -webkit-text-fill-color: var(--text);
+  .card__value {
+    grid-row: 1 / span 2;
+    margin: 0;
+    font-size: 1.85rem;
   }
 
-  .card__value { font-size: 2rem; }
-  .eyebrow { letter-spacing: 0.12em; font-size: 11px; }
-  .eyebrow::before { flex: none; }
+  .card__label {
+    grid-column: 2;
+    margin: 0 0 3px;
+    font-size: 10px;
+  }
+
+  .card__note {
+    grid-column: 2;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .footer { font-size: 12px; padding-bottom: 28px; }
 
   .scene--contact .form { grid-column: 1; grid-row: auto; }
   .form__row { grid-template-columns: 1fr; }
