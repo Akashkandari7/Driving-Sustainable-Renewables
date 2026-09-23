@@ -4,3 +4,7 @@ out
 next-env.d.ts
 *.tsbuildinfo
 .env*.local
+
+# Agent instruction files (kept local, never published)
+CLAUDE.md
+AGENTS.md
