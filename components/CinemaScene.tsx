@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 /**
@@ -30,6 +30,7 @@ export type CinemaShot = {
 };
 
 const depthSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-depth.jpg");
+const phoneSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-m.jpg");
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -164,8 +165,70 @@ function framing(shot: CinemaShot, t: number, tight = 1) {
 
 export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const platesRef = useRef<HTMLDivElement>(null);
+  const [phone, setPhone] = useState<boolean | null>(null);
+
+  // Phones get plain crossfading plates: a portrait window onto a 16:9 photograph leaves the shader
+  // almost nothing to work with, and the effects cost more than they show at that size.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 860px), (pointer: coarse)");
+    const apply = () => setPhone(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  // --- phone: scroll drives which plate is showing ---
+  useEffect(() => {
+    if (!phone) return;
+    const host = platesRef.current;
+    if (!host) return;
+    const layers = Array.from(host.children) as HTMLElement[];
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-shot]"));
+    let raf = 0;
+
+    const paint = () => {
+      raf = 0;
+      const vc = window.innerHeight / 2;
+      const centers = sections.map((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      });
+      let p = 0;
+      if (centers.length && vc > centers[0]) {
+        p = centers.length - 1;
+        for (let i = 0; i < centers.length - 1; i++) {
+          if (vc < centers[i + 1]) {
+            p = i + (vc - centers[i]) / (centers[i + 1] - centers[i]);
+            break;
+          }
+        }
+      }
+      const i = Math.min(Math.floor(p), Math.max(0, layers.length - 1));
+      const f = Math.min(1, Math.max(0, p - i));
+      layers.forEach((el, k) => {
+        const on = k === i ? 1 - f : k === i + 1 ? f : 0;
+        el.style.opacity = on.toFixed(3);
+        // a slow drift so the plate is not completely static while it is on screen
+        el.style.transform = `scale(${(1.06 + (k === i ? f : 0) * 0.05).toFixed(3)})`;
+      });
+    };
+
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(paint);
+    };
+    paint();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [phone, shots]);
 
   useEffect(() => {
+    if (phone !== false) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     let disposed = false;
@@ -400,7 +463,25 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       disposed = true;
       cleanup();
     };
-  }, [shots]);
+  }, [shots, phone]);
+
+  if (phone === null) return <div className="cine__canvas cine__canvas--idle" aria-hidden="true" />;
+
+  if (phone) {
+    return (
+      <div className="cine__plates" ref={platesRef} aria-hidden="true">
+        {shots.map((s, i) => (
+          <img
+            key={`${s.src}-${i}`}
+            src={phoneSrc(s.src)}
+            alt=""
+            loading={i < 2 ? "eager" : "lazy"}
+            style={{ opacity: i === 0 ? 1 : 0, objectPosition: `${50 + (s.focus?.[0] ?? 0) * 60}% 50%` }}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return <canvas ref={canvasRef} className="cine__canvas" aria-hidden="true" />;
 }

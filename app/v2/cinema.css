@@ -13,6 +13,42 @@
   isolation: isolate;
 }
 
+/* phone backdrop: plain plates, crossfaded on scroll */
+.cine__plates {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #05070b;
+}
+
+.cine__plates img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.75s ease, transform 1.4s ease-out;
+  will-change: opacity, transform;
+}
+
+/* the scrim lives here on phones, where the shader is not doing the grading */
+.cine__plates::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(4, 8, 13, 0.3), rgba(4, 8, 13, 0.5) 45%, rgba(4, 8, 13, 0.72)),
+    radial-gradient(120% 70% at 70% 20%, rgba(255, 150, 60, 0.14), transparent 60%);
+}
+
+.cine__canvas--idle {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #05070b;
+}
+
 .cine__canvas {
   position: fixed;
   inset: 0;
@@ -865,6 +901,17 @@
     grid-template-columns: 1fr;
     padding: 16vh var(--pad) 10vh;
     gap: 30px;
+  }
+
+  /* just enough shade behind the copy; the plate keeps its own light */
+  .cine__act::before,
+  .cine__act--contact::before {
+    background: linear-gradient(rgba(4, 8, 13, 0.08), rgba(4, 8, 13, 0.42));
+  }
+
+  .cine__copy .cine__lead,
+  .cine__copy .cine__body {
+    text-shadow: 0 2px 16px rgba(4, 8, 13, 0.95);
   }
 
   .cine h1 { font-size: clamp(2rem, 9.2vw, 2.9rem); }
