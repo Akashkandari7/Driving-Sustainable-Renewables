@@ -1061,3 +1061,33 @@
   .cine__bars::before,
   .cine__bars::after { display: none; }
 }
+
+/* ---------- morphing figure ---------- */
+
+/* Sits between the plate and the copy: light drawn over the photograph, never over the words. */
+.cine__figure {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* the plate can be bright exactly where the figure sits, so it gets its own pool of shade */
+.cine__figure-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(38% 42% at 78% 42%, rgba(4, 10, 16, 0.5), transparent 70%);
+}
+
+@media (max-width: 860px) {
+  /* on phones the figure sits in the band above the copy */
+  .cine__figure {
+    height: 52vh;
+    opacity: 0.85;
+  }
+}

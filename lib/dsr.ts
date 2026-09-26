@@ -2,9 +2,15 @@
 // Nothing here is invented — no figures are shown anywhere, because the client supplied none.
 
 export const IMAGES = {
-  sunset: "/images/dsr-solar-engineers-sunset.png",
-  bess: "/images/dsr-bess-container.png",
-  blueprint: "/images/dsr-engineers-blueprint.png",
+  sunset: "/images/dsr-solar-engineers-sunset.png", // engineers overlooking the plant at sunset
+  bess: "/images/dsr-bess-container.png", // branded BESS containers, mountains behind
+  blueprint: "/images/dsr-engineers-blueprint.png", // three engineers over a drawing
+  hybrid: "/images/hybrid-site-dusk.png", // tablet on a hybrid solar + wind + storage site
+  panels: "/images/panels-sunrise.png", // module rows catching the sun
+  reservoir: "/images/bess-reservoir.png", // containers above the reservoir
+  rooftop: "/images/rooftop-install.png", // two installers carrying a module
+  inspection: "/images/rooftop-inspection.png", // laptop on the array, turbines behind
+  office: "/images/dsr-office.png", // the DSR office floor
 };
 
 export const contact = {
