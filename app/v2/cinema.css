@@ -963,17 +963,11 @@
 
 /* ---------- scene index ---------- */
 
-.cine__hud {
-  position: fixed;
-  right: clamp(14px, 2vw, 34px);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
-  pointer-events: none;
+/* The instrument panel carries the scene label now, so the old right-edge index is retired. */
+.cine__hud,
+.cine__hud-count,
+.cine__hud ul {
+  display: none !important;
 }
 
 .cine__hud-count {
@@ -1062,32 +1056,103 @@
   .cine__bars::after { display: none; }
 }
 
-/* ---------- morphing figure ---------- */
 
-/* Sits between the plate and the copy: light drawn over the photograph, never over the words. */
-.cine__figure {
+
+/* ---------- instrument panel ---------- */
+
+/* The figure lives in a framed window on the right: always dark behind it, always the same place. */
+.cine__inst {
   position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1;
+  right: clamp(64px, 6vw, 104px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: clamp(240px, 24vw, 340px);
   pointer-events: none;
-  mix-blend-mode: screen;
 }
 
-/* the plate can be bright exactly where the figure sits, so it gets its own pool of shade */
-.cine__figure-shade {
-  position: fixed;
+.cine__inst-frame {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(70% 70% at 50% 45%, rgba(10, 22, 30, 0.72), rgba(4, 8, 13, 0.88)),
+    linear-gradient(rgba(4, 8, 13, 0.5), rgba(4, 8, 13, 0.7));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6), 0 30px 70px -40px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+
+.cine__inst-frame canvas {
+  position: absolute;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(38% 42% at 78% 42%, rgba(4, 10, 16, 0.5), transparent 70%);
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* corner ticks, like a viewfinder */
+.cine__inst-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(52, 211, 153, 0.75);
+}
+
+.cine__inst-corner--tl { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+.cine__inst-corner--tr { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
+.cine__inst-corner--bl { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
+.cine__inst-corner--br { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+
+.cine__inst-label {
+  margin: 12px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.cine__inst-label span {
+  padding: 3px 8px;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 999px;
+  color: var(--green);
+  letter-spacing: 0.1em;
+}
+
+/* keep the copy and the card grids clear of the panel */
+@media (min-width: 1101px) {
+  .cine__act {
+    padding-right: calc(clamp(240px, 24vw, 340px) + clamp(64px, 6vw, 104px) + 56px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .cine__inst {
+    right: clamp(16px, 4vw, 40px);
+    top: auto;
+    bottom: 26px;
+    transform: none;
+    width: clamp(120px, 26vw, 180px);
+  }
+
+  .cine__inst-label { display: none; }
 }
 
 @media (max-width: 860px) {
-  /* on phones the figure sits in the band above the copy */
-  .cine__figure {
-    height: 52vh;
-    opacity: 0.85;
+  .cine__inst {
+    right: 14px;
+    top: 74px;
+    bottom: auto;
+    width: 104px;
+    opacity: 0.92;
   }
+
+  .cine__inst-corner { width: 10px; height: 10px; }
 }

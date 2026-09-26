@@ -42,7 +42,7 @@ export default function CineHud() {
 
   return (
     <>
-      <div className="cine__hud" aria-hidden="true">
+      <div className="cine__hud" hidden aria-hidden="true">
         <span className="cine__hud-count">
           {String(active + 1).padStart(2, "0")} <i>/</i> {String(scenes.length).padStart(2, "0")}
         </span>

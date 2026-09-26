@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { battery, bolt, globe, network, randoms, solarPanel, sun } from "@/lib/shapes";
 
 /**
- * A figure drawn in light, floating over the plate: each act has its own form — sun, panel, cell,
- * charge, network, globe — and the swarm morphs from one to the next as the page scrolls, swirling
- * through the change. Tuned for the cinematic pages: cool white with a green core, never louder
- * than the photograph behind it.
+ * The figure gets its own instrument panel rather than floating loose over the photograph: a framed,
+ * darkened window on the right of the frame where a swarm of light holds one form per act and morphs
+ * into the next as the page scrolls. Inside the frame it always has contrast, and it can never drift
+ * across the copy.
  */
 
 export type FigureKey = "sun" | "panel" | "battery" | "bolt" | "network" | "globe";
@@ -20,6 +20,15 @@ const BUILDERS: Record<FigureKey, (n: number) => Float32Array> = {
   bolt,
   network,
   globe,
+};
+
+const LABELS: Record<FigureKey, string> = {
+  sun: "Irradiance",
+  panel: "PV Module",
+  battery: "Battery Cell",
+  bolt: "Power Flow",
+  network: "Quality Data",
+  globe: "Project Lifecycle",
 };
 
 const vertexShader = /* glsl */ `
@@ -42,78 +51,75 @@ const vertexShader = /* glsl */ `
     float ang = uTrans * (0.9 + aRand * 2.0);
     float c = cos(ang), s = sin(ang);
     pos.xz = mat2(c, -s, s, c) * pos.xz;
-    pos += normalize(pos + 0.0001) * uTrans * (0.35 + aRand * 1.1);
+    pos += normalize(pos + 0.0001) * uTrans * (0.3 + aRand * 0.9);
 
     float t = uTime * 0.5 + aRand * 62.83;
-    pos += vec3(sin(t), cos(t * 1.3), sin(t * 0.7)) * (0.01 + uTrans * 0.16);
-
-    pos *= mix(0.4, 1.0, uIntro);
+    pos += vec3(sin(t), cos(t * 1.3), sin(t * 0.7)) * (0.01 + uTrans * 0.14);
+    pos *= mix(0.55, 1.0, uIntro);
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
     gl_PointSize = uSize * aSize * uPR / -mv.z;
     vRand = aRand;
-    vTw = 0.55 + 0.45 * sin(uTime * 1.5 + aRand * 40.0);
+    vTw = 0.6 + 0.4 * sin(uTime * 1.5 + aRand * 40.0);
   }
 `;
 
 const fragmentShader = /* glsl */ `
   uniform vec3 uColA;
   uniform vec3 uColB;
-  uniform float uOpacity;
   varying float vRand;
   varying float vTw;
 
   void main() {
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
-    float a = pow(1.0 - d * 2.0, 1.8);
-    vec3 col = mix(uColA, uColB, vRand) + pow(a, 5.0) * 0.5;
-    gl_FragColor = vec4(col, a * vTw * uOpacity);
+    float a = pow(1.0 - d * 2.0, 1.7);
+    vec3 col = mix(uColA, uColB, vRand) + pow(a, 4.0) * 0.7;
+    gl_FragColor = vec4(col, a * vTw);
   }
 `;
 
 export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     } catch {
       return;
     }
 
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const phone = window.innerWidth < 860;
-    const N = phone ? 5000 : 14000;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, phone ? 1.6 : 2));
+    const N = phone ? 7000 : 16000;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.z = 9;
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.z = 8.4;
 
-    // every figure this page needs, precomputed once
     const forms = figures.map((k) => BUILDERS[k](N));
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(forms[0], 3));
     geometry.setAttribute("p1", new THREE.BufferAttribute(forms[Math.min(1, forms.length - 1)], 3));
     geometry.setAttribute("aRand", new THREE.BufferAttribute(randoms(N, 5), 1));
-    geometry.setAttribute("aSize", new THREE.BufferAttribute(randoms(N, 9).map((v) => 0.4 + Math.pow(v, 4) * 1.7), 1));
+    geometry.setAttribute("aSize", new THREE.BufferAttribute(randoms(N, 9).map((v) => 0.5 + Math.pow(v, 4) * 1.6), 1));
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 40);
 
     const uniforms = {
       uMix: { value: 0 },
       uTrans: { value: 0 },
       uTime: { value: 0 },
-      uSize: { value: phone ? 26 : 36 },
+      uSize: { value: phone ? 26 : 30 },
       uPR: { value: renderer.getPixelRatio() },
-      uIntro: { value: 0 },
-      uOpacity: { value: phone ? 0.6 : 0.95 },
-      uColA: { value: new THREE.Color("#eafff6") },
+      uIntro: { value: reduceMotion ? 1 : 0 },
+      uColA: { value: new THREE.Color("#f2fffa") },
       uColB: { value: new THREE.Color("#34d399") },
     };
     const material = new THREE.ShaderMaterial({
@@ -126,11 +132,20 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
     });
     const group = new THREE.Group();
     group.add(new THREE.Points(geometry, material));
-    group.scale.setScalar(1);
+    group.scale.setScalar(1.25);
     scene.add(group);
 
-    const resize = () => renderer.setSize(window.innerWidth, window.innerHeight, false);
+    // the canvas fills its frame, so it sizes from the element rather than the window
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      renderer.setSize(r.width, r.height, false);
+      camera.aspect = r.width / r.height;
+      camera.updateProjectionMatrix();
+    };
     resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
     window.addEventListener("resize", resize);
 
     const pointer = new THREE.Vector2();
@@ -157,6 +172,7 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
     let progress = readProgress();
     let shownA = -1;
     let shownB = -1;
+    let labelled = -1;
     const clock = new THREE.Clock();
     let raf = 0;
 
@@ -165,7 +181,7 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
       const dt = Math.min(clock.getDelta(), 0.05);
       const time = clock.elapsedTime;
 
-      progress += (readProgress() - progress) * (1 - Math.pow(0.004, dt));
+      progress += (readProgress() - progress) * (reduceMotion ? 1 : 1 - Math.pow(0.004, dt));
       const i = Math.min(Math.floor(progress), Math.max(0, last - 1));
       const j = Math.min(i + 1, last);
       const f = Math.min(1, Math.max(0, progress - i));
@@ -179,25 +195,19 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
         geometry.setAttribute("p1", new THREE.BufferAttribute(forms[j], 3));
         shownB = j;
       }
+      const showing = f > 0.5 ? j : i;
+      if (showing !== labelled) {
+        labelled = showing;
+        setActive(showing);
+      }
 
       uniforms.uMix.value = f * f * (3 - 2 * f);
-      uniforms.uTrans.value = Math.sin(Math.PI * f);
-      uniforms.uTime.value = time;
-      uniforms.uIntro.value = Math.min(1, time / 1.8);
+      uniforms.uTrans.value = reduceMotion ? 0 : Math.sin(Math.PI * f);
+      uniforms.uTime.value = reduceMotion ? 0 : time;
+      uniforms.uIntro.value = Math.min(1, time / 1.6);
 
-      // hero acts have an open right half; the rest carry card grids, so the figure lifts into the
-      // top corner and shrinks to stay clear of them
-      const openA = i === 0 ? 1 : 0;
-      const openB = j === 0 ? 1 : 0;
-      const open = openA + (openB - openA) * f;
-      const targetX = phone ? 0 : 2.85 + open * 0.15;
-      const targetY = phone ? 2.4 : 1.45 - open * 0.65;
-      const scale = phone ? 0.4 : 0.52 + open * 0.16;
-      group.position.x += (targetX + pointer.x * 0.12 - group.position.x) * 0.05;
-      group.position.y += (targetY - pointer.y * 0.08 - group.position.y) * 0.05;
-      const sc = group.scale.x + (scale - group.scale.x) * 0.06;
-      group.scale.setScalar(sc);
-      group.rotation.y = Math.sin(time * 0.18) * 0.26;
+      group.rotation.y = Math.sin(time * 0.16) * 0.3 + pointer.x * 0.12;
+      group.rotation.x = -pointer.y * 0.08;
 
       renderer.render(scene, camera);
     };
@@ -205,6 +215,7 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
 
     return () => {
       cancelAnimationFrame(raf);
+      ro.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointer);
       geometry.dispose();
@@ -214,9 +225,18 @@ export default function MorphFigures({ figures }: { figures: FigureKey[] }) {
   }, [figures]);
 
   return (
-    <>
-      <div className="cine__figure-shade" aria-hidden="true" />
-      <canvas ref={canvasRef} className="cine__figure" aria-hidden="true" />
-    </>
+    <aside className="cine__inst" aria-hidden="true">
+      <div className="cine__inst-frame">
+        <canvas ref={canvasRef} />
+        <span className="cine__inst-corner cine__inst-corner--tl" />
+        <span className="cine__inst-corner cine__inst-corner--tr" />
+        <span className="cine__inst-corner cine__inst-corner--bl" />
+        <span className="cine__inst-corner cine__inst-corner--br" />
+      </div>
+      <p className="cine__inst-label">
+        <span>{String(active + 1).padStart(2, "0")}</span>
+        {LABELS[figures[active] ?? figures[0]]}
+      </p>
+    </aside>
   );
 }
