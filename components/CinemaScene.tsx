@@ -66,7 +66,7 @@ const fragmentShader = /* glsl */ `
 
   /* cover-fit sampling, displaced by the plate's depth so near things travel further */
   vec3 plate(sampler2D tex, sampler2D dep, vec2 cover, vec2 focus, float zoom, vec2 par, float drift, vec2 off) {
-    vec2 base = (vUv + off - 0.5) / (cover * zoom * (1.0 + drift)) + focus + 0.5;
+    vec2 base = (vUv + off - 0.5) * cover / (zoom * (1.0 + drift)) + focus + 0.5;
     float d = texture2D(dep, clamp(base, 0.002, 0.998)).r;
     vec2 uv = base + par * (d - 0.45);
     return texture2D(tex, clamp(uv, 0.002, 0.998)).rgb;
@@ -143,22 +143,22 @@ const smootherstep = (x: number) => {
 };
 
 /** Where the camera sits within a shot, 0 = act entering, 1 = act leaving. */
-function framing(shot: CinemaShot, t: number) {
-  const zoom = shot.zoom ?? 1.06;
-  const fx = shot.focus?.[0] ?? 0;
-  const fy = shot.focus?.[1] ?? 0;
+function framing(shot: CinemaShot, t: number, tight = 1) {
+  const zoom = 1 + ((shot.zoom ?? 1.06) - 1) * tight;
+  const fx = (shot.focus?.[0] ?? 0) * tight;
+  const fy = (shot.focus?.[1] ?? 0) * tight;
   const e = t - 0.5; // centred so the move brackets the act
   switch (shot.move ?? "push") {
     case "panLeft":
-      return { zoom: zoom * (1 + t * 0.05), x: fx - e * 0.12, y: fy };
+      return { zoom: zoom * (1 + t * 0.05 * tight), x: fx - e * 0.12 * tight, y: fy };
     case "panRight":
-      return { zoom: zoom * (1 + t * 0.05), x: fx + e * 0.12, y: fy };
+      return { zoom: zoom * (1 + t * 0.05 * tight), x: fx + e * 0.12 * tight, y: fy };
     case "tiltUp":
-      return { zoom: zoom * (1 + t * 0.06), x: fx, y: fy + e * 0.1 };
+      return { zoom: zoom * (1 + t * 0.06 * tight), x: fx, y: fy + e * 0.1 * tight };
     case "pullBack":
-      return { zoom: zoom * (1.12 - t * 0.14), x: fx, y: fy - e * 0.03 };
+      return { zoom: zoom * (1 + (0.12 - t * 0.14) * tight), x: fx, y: fy - e * 0.03 * tight };
     default:
-      return { zoom: zoom * (1 + t * 0.13), x: fx, y: fy };
+      return { zoom: zoom * (1 + t * 0.13 * tight), x: fx, y: fy };
   }
 }
 
@@ -335,8 +335,10 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         const f = Math.min(1, Math.max(0, progress - i));
         const j = Math.min(i + 1, last);
 
-        const A = framing(shots[i], f);
-        const B = framing(shots[j], f - 1);
+        // portrait frames show a narrow slice of a 16:9 plate, so the whole move is scaled down
+        const tight = window.innerHeight > window.innerWidth ? 0.3 : 1;
+        const A = framing(shots[i], f, tight);
+        const B = framing(shots[j], f - 1, tight);
 
         uniforms.uTexA.value = loaded[i].tex;
         uniforms.uDepA.value = loaded[i].dep;
@@ -354,8 +356,9 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
 
         // depth parallax: pointer plus a little from the camera's own travel
         smoothPointer.lerp(pointer, 0.045);
-        uniforms.uParA.value.set(smoothPointer.x * 0.05 + f * 0.012, smoothPointer.y * 0.028);
-        uniforms.uParB.value.set(smoothPointer.x * 0.05 + (f - 1) * 0.012, smoothPointer.y * 0.028);
+        const par = 0.05 * tight;
+        uniforms.uParA.value.set(smoothPointer.x * par + f * 0.012 * tight, smoothPointer.y * par * 0.56);
+        uniforms.uParB.value.set(smoothPointer.x * par + (f - 1) * 0.012 * tight, smoothPointer.y * par * 0.56);
 
         uniforms.uSunA.value.set(shots[i].sun?.[0] ?? 0.82, shots[i].sun?.[1] ?? 0.38);
         uniforms.uSunB.value.set(shots[j].sun?.[0] ?? 0.82, shots[j].sun?.[1] ?? 0.38);
@@ -363,7 +366,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         // the cut itself: a light leak and a touch of smear, both strongest mid-dissolve
         const cut = Math.sin(Math.PI * Math.min(1, Math.max(0, f))) * (0.35 + 0.65 * velocity);
         uniforms.uFlash.value = reduceMotion ? 0 : cut * 0.16;
-        uniforms.uBlur.value = reduceMotion ? 0 : velocity * 0.012;
+        uniforms.uBlur.value = reduceMotion ? 0 : velocity * 0.012 * tight;
         // letterbox bars close in while the page is moving quickly
         root.style.setProperty("--cine-bar", `${(reduceMotion ? 0 : velocity * 34).toFixed(2)}px`);
 
