@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CinemaScene, { type CinemaShot } from "@/components/CinemaScene";
 import CineHeading from "@/components/CineHeading";
-import MorphFigures, { type FigureKey } from "@/components/MorphFigures";
 import { IMAGES, services, servicesIntro } from "@/lib/dsr";
 
 export const metadata: Metadata = {
@@ -22,13 +21,10 @@ const shots: CinemaShot[] = [
   { src: IMAGES.sunset, zoom: 1.1, focus: [-0.04, 0], dim: 0.5, move: "pullBack", sun: [0.86, 0.34] },
 ];
 
-const figures: FigureKey[] = ["panel", "network", "globe", "battery", "bolt", "sun", "battery", "bolt", "globe"];
-
 export default function ServicesPage() {
   return (
     <>
       <CinemaScene shots={shots} />
-      <MorphFigures figures={figures} />
 
       <main>
         <section data-shot data-label="Overview" className="cine__act cine__act--hero">
