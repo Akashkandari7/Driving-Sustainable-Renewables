@@ -8,3 +8,7 @@ next-env.d.ts
 # Agent instruction files (kept local, never published)
 CLAUDE.md
 AGENTS.md
+
+# Client source material and scratch references (kept local)
+Images/
+*.docx
