@@ -22,7 +22,8 @@ export default function CineNav() {
   return (
     <header className={`cine__bar${open ? " is-open" : ""}${solid ? " is-solid" : ""}`}>
       <Link href="/v2" className="cine__logo" onClick={close} aria-label="DSR — Driving Sustainable Renewables, home">
-        <img src="/images/logo-dark.png" alt="DSR" width={619} height={197} />
+        <img className="cine__logo-dusk" src="/images/logo-dark.png" alt="DSR" width={619} height={197} />
+        <img className="cine__logo-dawn" src="/images/logo-light.png" alt="" aria-hidden="true" width={619} height={197} />
         <span>Driving Sustainable Renewables</span>
       </Link>
 

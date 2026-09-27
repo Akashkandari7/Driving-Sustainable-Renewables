@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CinemaScene, { type CinemaShot } from "@/components/CinemaScene";
 import CineHeading from "@/components/CineHeading";
-import { IMAGES, services, servicesIntro } from "@/lib/dsr";
+import { services, servicesIntro } from "@/lib/dsr";
 
 export const metadata: Metadata = {
   title: "Services — Engineering. Quality. Execution. | DSR",
@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 };
 
 const shots: CinemaShot[] = [
-  { src: IMAGES.panels, zoom: 1.06, focus: [0.06, 0], dim: 0.4, move: "push", sun: [0.9, 0.3] },
-  { src: IMAGES.blueprint, zoom: 1.16, focus: [0.14, 0.02], dim: 0.54, move: "panLeft", sun: [0.08, 0.2] },
-  { src: IMAGES.office, zoom: 1.14, focus: [0.1, 0.02], dim: 0.56, move: "panRight", sun: [0.12, 0.12] },
-  { src: IMAGES.bess, zoom: 1.2, focus: [0.16, 0], dim: 0.54, move: "tiltUp", sun: [0.93, 0.42] },
-  { src: IMAGES.rooftop, zoom: 1.14, focus: [-0.08, 0.02], dim: 0.54, move: "panLeft", sun: [0.2, 0.18] },
-  { src: IMAGES.inspection, zoom: 1.18, focus: [0.12, 0.02], dim: 0.56, move: "push", sun: [0.16, 0.16] },
-  { src: IMAGES.reservoir, zoom: 1.16, focus: [0.1, 0], dim: 0.54, move: "panRight", sun: [0.92, 0.22] },
-  { src: IMAGES.hybrid, zoom: 1.2, focus: [-0.06, 0], dim: 0.56, move: "tiltUp", sun: [0.88, 0.28] },
-  { src: IMAGES.sunset, zoom: 1.1, focus: [-0.04, 0], dim: 0.5, move: "pullBack", sun: [0.86, 0.34] },
+  { plate: "overlook", zoom: 1.06, focus: [0.06, 0], dim: 0.4, move: "push", sun: [0.78, 0.28] },
+  { plate: "layout-bonnet", zoom: 1.12, focus: [0.1, 0.02], dim: 0.52, move: "panLeft", sun: [0.8, 0.22] },
+  { plate: "crates", zoom: 1.1, focus: [0.08, 0.02], dim: 0.54, move: "panRight", sun: [0.25, 0.14] },
+  { plate: "cell-inspect", zoom: 1.14, focus: [0.12, 0], dim: 0.54, move: "tiltUp", sun: [0.35, 0.18] },
+  { plate: "construction", zoom: 1.12, focus: [-0.08, 0.02], dim: 0.54, move: "panLeft", sun: [0.18, 0.22] },
+  { plate: "switchgear", zoom: 1.12, focus: [0.1, 0.02], dim: 0.54, move: "push", sun: [0.28, 0.2] },
+  { plate: "bess-interior", zoom: 1.1, focus: [0.1, 0], dim: 0.54, move: "panRight", sun: [0.6, 0.3] },
+  { plate: "meeting", zoom: 1.1, focus: [-0.06, 0], dim: 0.54, move: "tiltUp", sun: [0.3, 0.16] },
+  { plate: "tracker-flare", zoom: 1.06, focus: [-0.04, 0], dim: 0.48, move: "pullBack", sun: [0.6, 0.4] },
 ];
 
 export default function ServicesPage() {

@@ -14,7 +14,8 @@ import * as THREE from "three";
 export type CameraMove = "push" | "panLeft" | "panRight" | "tiltUp" | "pullBack";
 
 export type CinemaShot = {
-  src: string;
+  /** plate name, e.g. "hybrid" — the file is picked per mode: /images/<mode>/<mode>-<plate>.png */
+  plate: string;
   /** framing: 1 = fit the frame, >1 crops in tighter */
   zoom?: number;
   /** where the crop sits, -0.5…0.5 of the frame */
@@ -29,8 +30,10 @@ export type CinemaShot = {
   label?: string;
 };
 
+const plateSrc = (plate: string, mode: string) => `/images/${mode}/${mode}-${plate}.png`;
 const depthSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-depth.jpg");
 const phoneSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-m.jpg");
+const readMode = () => (document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dawn" ? "dawn" : "dusk");
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -116,7 +119,7 @@ const fragmentShader = /* glsl */ `
       plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, -r * ca).b, uMix);
 
     // grade: dusk deepens the shadows; dawn lifts the whole frame and cools the warmth back
-    col = pow(col, mix(vec3(1.06), vec3(0.82), uDawn));
+    col = pow(col, mix(vec3(0.94), vec3(0.84), uDawn));
     col *= mix(mix(vec3(1.0), vec3(1.04, 0.99, 0.92), 0.5), vec3(1.1, 1.06, 1.0), uDawn);
     col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, mix(1.12, 1.05, uDawn));
 
@@ -126,9 +129,9 @@ const fragmentShader = /* glsl */ `
     // darken towards the edges and the lower third, where the copy sits
     vec2 d = vUv - 0.5;
     float vig = 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.05, 1.25)));
-    col *= mix(mix(0.55, 1.0, vig), mix(0.82, 1.0, vig), uDawn);
-    col *= 1.0 - dim * smoothstep(0.35, 1.0, 1.0 - vUv.y) * mix(0.85, 0.45, uDawn);
-    col *= 1.0 - dim * mix(0.25, 0.08, uDawn);
+    col *= mix(mix(0.72, 1.0, vig), mix(0.86, 1.0, vig), uDawn);
+    col *= 1.0 - dim * smoothstep(0.35, 1.0, 1.0 - vUv.y) * mix(0.62, 0.42, uDawn);
+    col *= 1.0 - dim * mix(0.14, 0.06, uDawn);
 
     // light leak across the cut between two shots
     col += vec3(1.0, 0.86, 0.66) * uFlash * (0.35 + 0.65 * smoothstep(0.0, 1.0, vUv.x));
@@ -168,6 +171,15 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const platesRef = useRef<HTMLDivElement>(null);
   const [phone, setPhone] = useState<boolean | null>(null);
+  const [mode, setMode] = useState("dusk");
+
+  // the phone plates are plain images, so they swap with the mode here
+  useEffect(() => {
+    setMode(readMode());
+    const onMode = (e: Event) => setMode((e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk");
+    window.addEventListener("cinemode", onMode);
+    return () => window.removeEventListener("cinemode", onMode);
+  }, []);
 
   // Phones get plain crossfading plates: a portrait window onto a 16:9 photograph leaves the shader
   // almost nothing to work with, and the effects cost more than they show at that size.
@@ -257,13 +269,28 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
           return t;
         });
 
-      const loaded = await Promise.all(
-        shots.map(async (s) => ({ tex: await load(s.src, true), dep: await load(depthSrc(s.src), false) })),
-      ).catch(() => null);
-      if (disposed || !loaded) {
+      type Plate = { tex: THREE.Texture; dep: THREE.Texture };
+      const sets = new Map<string, Plate[]>();
+      const loadSet = async (m: string) => {
+        const cached = sets.get(m);
+        if (cached) return cached;
+        const set = await Promise.all(
+          shots.map(async (sh) => {
+            const src = plateSrc(sh.plate, m);
+            return { tex: await load(src, true), dep: await load(depthSrc(src), false) };
+          }),
+        );
+        sets.set(m, set);
+        return set;
+      };
+
+      let mode = readMode();
+      const loadedOrNull = await loadSet(mode).catch(() => null);
+      if (disposed || !loadedOrNull) {
         renderer.dispose();
         return;
       }
+      let loaded = loadedOrNull;
 
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -367,10 +394,21 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       window.addEventListener("pointermove", onPointer);
 
       // dawn/dusk, set by CineMode and eased so the switch feels like the light changing
-      let dawnTarget = document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dawn" ? 1 : 0;
+      let dawnTarget = mode === "dawn" ? 1 : 0;
       uniforms.uDawn.value = dawnTarget;
       const onMode = (e: Event) => {
-        dawnTarget = (e as CustomEvent<string>).detail === "dawn" ? 1 : 0;
+        const next = (e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk";
+        dawnTarget = next === "dawn" ? 1 : 0;
+        if (next === mode) return;
+        mode = next;
+        // the other set loads in the background and is swapped in when it is ready
+        loadSet(next)
+          .then((set) => {
+            if (!disposed && mode === next) loaded = set;
+          })
+          .catch(() => {
+            // keep showing the set we have
+          });
       };
       window.addEventListener("cinemode", onMode);
 
@@ -462,10 +500,12 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         (quad.material as THREE.Material).dispose();
         dustGeo.dispose();
         dustMat.dispose();
-        loaded.forEach(({ tex, dep }) => {
-          tex.dispose();
-          dep.dispose();
-        });
+        sets.forEach((set) =>
+          set.forEach(({ tex, dep }) => {
+            tex.dispose();
+            dep.dispose();
+          }),
+        );
         renderer.dispose();
       };
     };
@@ -484,8 +524,8 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       <div className="cine__plates" ref={platesRef} aria-hidden="true">
         {shots.map((s, i) => (
           <img
-            key={`${s.src}-${i}`}
-            src={phoneSrc(s.src)}
+            key={`${s.plate}-${i}`}
+            src={phoneSrc(plateSrc(s.plate, mode))}
             alt=""
             loading={i < 2 ? "eager" : "lazy"}
             style={{ opacity: i === 0 ? 1 : 0, objectPosition: `${50 + (s.focus?.[0] ?? 0) * 60}% 50%` }}

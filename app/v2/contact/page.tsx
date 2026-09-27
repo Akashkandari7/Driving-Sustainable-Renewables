@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CinemaScene, { type CinemaShot } from "@/components/CinemaScene";
 import CineHeading from "@/components/CineHeading";
 import ContactForm from "@/components/ContactForm";
-import { IMAGES, contact } from "@/lib/dsr";
+import { contact } from "@/lib/dsr";
 
 export const metadata: Metadata = {
   title: "Contact DSR — Discuss Your Project",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const shots: CinemaShot[] = [
-  { src: IMAGES.office, zoom: 1.12, focus: [0.08, 0.02], dim: 0.58, move: "pullBack", sun: [0.12, 0.12] },
+  { plate: "reception", zoom: 1.1, focus: [0.08, 0.02], dim: 0.56, move: "pullBack", sun: [0.24, 0.16] },
 ];
 
 export default function ContactPage() {

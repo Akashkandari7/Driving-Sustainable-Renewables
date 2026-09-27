@@ -1266,9 +1266,18 @@
   color: var(--paper-ink);
 }
 
-.cine[data-mode="dawn"] .cine__logo img,
-.cine[data-mode="dawn"] .cine__foot-logo {
-  content: url("/images/logo-light.png");
+/* the wordmark is light on the plate and dark on paper */
+.cine__logo-dawn { display: none; }
+.cine[data-mode="dawn"] .cine__logo-dusk { display: none; }
+.cine[data-mode="dawn"] .cine__logo-dawn { display: block; }
+
+/* flow labels sit on a light card in dawn */
+.cine[data-mode="dawn"] .cine__flow {
+  color: var(--paper-ink) !important;
+}
+
+.cine[data-mode="dawn"] .cine__stages p {
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__cta {

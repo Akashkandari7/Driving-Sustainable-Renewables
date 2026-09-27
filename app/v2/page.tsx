@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CinemaScene, { type CinemaShot } from "@/components/CinemaScene";
 import CineHeading from "@/components/CineHeading";
-import { IMAGES, home } from "@/lib/dsr";
+import { home } from "@/lib/dsr";
 
 export const metadata: Metadata = {
   title: "DSR — Building Tomorrow's Trust. With Engineering Intelligence.",
@@ -11,13 +11,13 @@ export const metadata: Metadata = {
 
 // One plate per act; the same three photographs, framed differently so the scroll reads as a camera move.
 const shots: CinemaShot[] = [
-  { src: IMAGES.hybrid, zoom: 1.05, focus: [0.04, 0], dim: 0.36, move: "push", sun: [0.88, 0.28] },
-  { src: IMAGES.sunset, zoom: 1.12, focus: [0.12, -0.02], dim: 0.46, move: "panLeft", sun: [0.86, 0.34] },
-  { src: IMAGES.rooftop, zoom: 1.1, focus: [-0.08, 0.02], dim: 0.48, move: "panRight", sun: [0.2, 0.18] },
-  { src: IMAGES.inspection, zoom: 1.16, focus: [0.1, 0.02], dim: 0.5, move: "tiltUp", sun: [0.16, 0.16] },
-  { src: IMAGES.blueprint, zoom: 1.14, focus: [0.14, 0.02], dim: 0.5, move: "push", sun: [0.08, 0.2] },
-  { src: IMAGES.panels, zoom: 1.12, focus: [-0.1, 0], dim: 0.48, move: "panLeft", sun: [0.9, 0.3] },
-  { src: IMAGES.reservoir, zoom: 1.08, focus: [0.06, 0], dim: 0.5, move: "pullBack", sun: [0.92, 0.22] },
+  { plate: "hybrid", zoom: 1.05, focus: [0.04, 0], dim: 0.36, move: "push", sun: [0.72, 0.3] },
+  { plate: "farm-mist", zoom: 1.1, focus: [0.08, 0], dim: 0.44, move: "panLeft", sun: [0.6, 0.28] },
+  { plate: "walk-row", zoom: 1.12, focus: [0.1, 0.02], dim: 0.48, move: "panRight", sun: [0.3, 0.2] },
+  { plate: "module-check", zoom: 1.08, focus: [0.12, 0.02], dim: 0.5, move: "tiltUp", sun: [0.8, 0.25] },
+  { plate: "drawing", zoom: 1.1, focus: [0.14, 0.02], dim: 0.5, move: "push", sun: [0.72, 0.18] },
+  { plate: "aerial", zoom: 1.08, focus: [-0.06, 0], dim: 0.46, move: "panLeft", sun: [0.85, 0.2] },
+  { plate: "horizon", zoom: 1.06, focus: [0.04, 0], dim: 0.48, move: "pullBack", sun: [0.55, 0.35] },
 ];
 
 export default function Home() {
