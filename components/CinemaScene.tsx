@@ -4,27 +4,31 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 /**
- * Full-bleed cinematic backdrop.
+ * The backdrop is built in three dimensions.
  *
- * Each plate is a photograph plus a depth map, so pushing in parallaxes the foreground against the
- * horizon instead of scaling flat. Every act gets its own camera move (push, pan, tilt, pull back),
- * the shots dissolve on scroll, and the result is graded — warm lift, vignette, grain, drifting dust.
+ * Every plate is a photograph plus a depth map, and the depth map is geometry here, not a trick in
+ * the pixels: the picture is a mesh whose surface stands up where the scene is near and falls away
+ * where it is far. A real camera moves through that relief — panels and containers pass in front of
+ * the hills while the horizon holds still — and the change of act is a flight: the plate you are on
+ * comes toward the camera and past it while the next one rises out of the depth behind it.
+ *
+ * Dawn and dusk fly differently: dawn opens outward into the light, dusk falls forward into the dark.
  */
 
 export type CameraMove = "push" | "panLeft" | "panRight" | "tiltUp" | "pullBack";
 
 export type CinemaShot = {
-  /** plate name, e.g. "hybrid" — the file is picked per mode: /images/<mode>/<mode>-<plate>.png */
+  /** plate name, e.g. "hybrid" — the file is picked per mode: /images/<mode>/<mode>-<plate> */
   plate: string;
-  /** framing: 1 = fit the frame, >1 crops in tighter */
+  /** framing: 1 = fit the frame, >1 stands the camera closer */
   zoom?: number;
-  /** where the crop sits, -0.5…0.5 of the frame */
+  /** where the camera looks, -0.5…0.5 of the frame */
   focus?: [number, number];
   /** how dark the plate is pushed so overlaid copy stays readable */
   dim?: number;
   /** how the camera behaves while this act is on screen */
   move?: CameraMove;
-  /** where the light source sits in the frame (0-1 uv) — drives flare and god rays */
+  /** where the light sits in the frame (0-1 uv) — drives the flare */
   sun?: [number, number];
   /** short label for the scene index */
   label?: string;
@@ -36,131 +40,84 @@ const depthOf = (base: string) => `${base}-depth.jpg`;
 const phoneOf = (base: string) => `${base}-p.jpg`;
 const readMode = () => (document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dusk" ? "dusk" : "dawn");
 
+const FOV = 46;
+const BASE_Z = 6; // where a plate rests in front of the camera
+
+/** The surface stands up along the depth map, so the photograph has real relief. */
 const vertexShader = /* glsl */ `
+  uniform sampler2D uDep;
+  uniform vec2 uCover;
+  uniform float uRelief;
+  uniform float uTime;
   varying vec2 vUv;
+  varying vec2 vRaw;
+  varying float vDepth;
+
   void main() {
-    vUv = uv;
-    gl_Position = vec4(position.xy, 0.0, 1.0);
+    vRaw = uv;
+    vec2 cuv = clamp((uv - 0.5) * uCover + 0.5, 0.002, 0.998);
+    vUv = cuv;
+
+    float d = texture2D(uDep, cuv).r;
+    vDepth = d;
+
+    vec3 p = position;
+    // near ground rises toward the camera, the horizon settles back
+    p.z += (d - 0.42) * uRelief;
+    // a slow swell so the scene breathes while it is held
+    p.z += sin(uTime * 0.25 + p.x * 0.6) * 0.012 * d;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }
 `;
 
 const fragmentShader = /* glsl */ `
   precision highp float;
-  uniform sampler2D uTexA;
-  uniform sampler2D uTexB;
-  uniform sampler2D uDepA;
-  uniform sampler2D uDepB;
-  uniform vec2 uCoverA;
-  uniform vec2 uCoverB;
-  uniform vec2 uFocusA;
-  uniform vec2 uFocusB;
-  uniform float uZoomA;
-  uniform float uZoomB;
-  uniform float uDimA;
-  uniform float uDimB;
-  uniform vec2 uParA;
-  uniform vec2 uParB;
-  uniform vec2 uSunA;
-  uniform vec2 uSunB;
-  uniform float uMix;
-  uniform float uTime;
-  uniform float uReveal;
-  uniform float uFlash;
-  uniform float uBlur;
+  uniform sampler2D uTex;
+  uniform vec2 uRes;
+  uniform vec2 uSun;
+  uniform float uDim;
   uniform float uDawn;
+  uniform float uFade;
+  uniform float uTime;
+  uniform float uGlow;
   varying vec2 vUv;
-
-  /* cover-fit sampling, displaced by the plate's depth so near things travel further */
-  vec3 plate(sampler2D tex, sampler2D dep, vec2 cover, vec2 focus, float zoom, vec2 par, float drift, vec2 off) {
-    vec2 base = (vUv + off - 0.5) * cover / (zoom * (1.0 + drift)) + focus + 0.5;
-    float d = texture2D(dep, clamp(base, 0.002, 0.998)).r;
-    vec2 uv = base + par * (d - 0.45);
-    return texture2D(tex, clamp(uv, 0.002, 0.998)).rgb;
-  }
-
-  /* how near this pixel is in the outgoing plate: 1 at the foreground, 0 at the horizon */
-  float depthAt(sampler2D dep, vec2 cover, vec2 focus, float zoom, float drift) {
-    vec2 base = (vUv - 0.5) * cover / (zoom * (1.0 + drift)) + focus + 0.5;
-    return texture2D(dep, clamp(base, 0.002, 0.998)).r;
-  }
-
-  /* a few taps along the scroll direction stand in for shutter smear while the page is moving fast */
-  vec3 smeared(sampler2D tex, sampler2D dep, vec2 cover, vec2 focus, float zoom, vec2 par, float drift) {
-    vec3 sum = vec3(0.0);
-    for (int i = 0; i < 5; i++) {
-      float t = (float(i) - 2.0) * 0.5;
-      sum += plate(tex, dep, cover, focus, zoom, par, drift, vec2(0.0, t * uBlur));
-    }
-    return sum / 5.0;
-  }
-
-  /* warm bloom around the sun plus a soft anamorphic streak */
-  vec3 flare(vec2 sun, float amount) {
-    vec2 d = vUv - sun;
-    d.x *= 1.35;
-    float glow = exp(-length(d) * 7.0) * 0.9;
-    float streak = exp(-abs(d.y) * 90.0) * exp(-abs(d.x) * 2.2) * 0.5;
-    float rays = exp(-length(d) * 3.0) * (0.5 + 0.5 * sin(atan(d.y, d.x) * 14.0 + uTime * 0.25)) * 0.16;
-    return vec3(1.0, 0.82, 0.58) * (glow + streak + rays) * amount;
-  }
+  varying vec2 vRaw;
+  varying float vDepth;
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
   void main() {
-    float breathe = sin(uTime * 0.06) * 0.01;
-    vec3 a = smeared(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe);
-    vec3 b = smeared(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe);
+    vec3 col = texture2D(uTex, vUv).rgb;
 
-
-    /* Scenes change through depth, not as a flat dissolve. Dawn hands the frame over from the
-       horizon forward, as light arriving; dusk lets go of the foreground first and falls back into
-       the next scene. A soft band of light rides the boundary. */
-    float dA = depthAt(uDepA, uCoverA, uFocusA, uZoomA, breathe);
-    float key = mix(1.0 - dA, dA, uDawn);
-    float band = 0.26;
-    float t = smoothstep(key - band, key + band, uMix * (1.0 + band * 2.0) - band);
-    vec3 col = mix(a, b, t);
-
-    float dim = mix(uDimA, uDimB, t);
-
-    // lens dispersion towards the edges of the frame
-    vec2 r = vUv - 0.5;
-    float ca = dot(r, r) * (0.0018 + uBlur * 0.16);
-    col.r = mix(
-      plate(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe, r * ca).r,
-      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, r * ca).r, t);
-    col.b = mix(
-      plate(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe, -r * ca).b,
-      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, -r * ca).b, t);
-
-    /* light riding the boundary — added after the dispersion, which rewrites red and blue */
-    float edge = exp(-pow((uMix * (1.0 + band * 2.0) - band - key) / band, 2.2) * 2.2);
-    edge *= smoothstep(0.0, 0.08, uMix) * smoothstep(1.0, 0.92, uMix);
-    col += mix(vec3(0.85, 0.42, 0.16), vec3(1.0, 0.84, 0.58), uDawn) * edge * 0.3;
-
-    // grade: dusk deepens the shadows; dawn lifts the whole frame and cools the warmth back
+    // grade: dusk deepens the shadows, dawn lifts the frame and pulls the warmth back
     col = pow(col, mix(vec3(0.94), vec3(0.84), uDawn));
-    col *= mix(mix(vec3(1.0), vec3(1.04, 0.99, 0.92), 0.5), vec3(1.1, 1.06, 1.0), uDawn);
+    col *= mix(vec3(1.02, 0.99, 0.94), vec3(1.1, 1.06, 1.0), uDawn);
     col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, mix(1.12, 1.05, uDawn));
 
-    // sun bloom, blended between the two plates
-    col += mix(flare(uSunA, 1.0 - uMix), flare(uSunB, uMix), uMix) * 0.55;
+    // screen-space furniture: flare, vignette, the shade the copy sits on, grain
+    vec2 suv = gl_FragCoord.xy / uRes;
+    vec2 fd = suv - uSun;
+    fd.x *= 1.35;
+    float glow = exp(-length(fd) * 7.0) * 0.9 + exp(-abs(fd.y) * 90.0) * exp(-abs(fd.x) * 2.2) * 0.5;
+    col += vec3(1.0, 0.82, 0.58) * glow * 0.5;
 
-    // darken towards the edges and the lower third, where the copy sits
-    vec2 d = vUv - 0.5;
+    vec2 d = suv - 0.5;
     float vig = 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.05, 1.25)));
     col *= mix(mix(0.72, 1.0, vig), mix(0.86, 1.0, vig), uDawn);
-    col *= 1.0 - dim * smoothstep(0.35, 1.0, 1.0 - vUv.y) * mix(0.62, 0.42, uDawn);
-    col *= 1.0 - dim * mix(0.14, 0.06, uDawn);
+    col *= 1.0 - uDim * smoothstep(0.35, 1.0, 1.0 - suv.y) * mix(0.62, 0.42, uDawn);
+    col *= 1.0 - uDim * mix(0.14, 0.06, uDawn);
 
-    // light leak across the cut between two shots
-    col += vec3(1.0, 0.86, 0.66) * uFlash * (0.35 + 0.65 * smoothstep(0.0, 1.0, vUv.x));
+    // light gathering on the near ground as a plate hands over
+    col += mix(vec3(0.85, 0.42, 0.16), vec3(1.0, 0.84, 0.58), uDawn) * uGlow * smoothstep(0.35, 1.0, vDepth) * 0.5;
 
-    col += (hash(vUv * 900.0 + uTime) - 0.5) * 0.022;
-    col *= uReveal;
-    gl_FragColor = vec4(col, 1.0);
+    col += (hash(suv * 900.0 + uTime) - 0.5) * 0.022;
+
+    // the mesh has borders of its own; feather them so a plate never arrives as a rectangle
+    vec2 e = smoothstep(vec2(0.0), vec2(0.16), vRaw) * smoothstep(vec2(0.0), vec2(0.16), 1.0 - vRaw);
+    gl_FragColor = vec4(col, uFade * e.x * e.y);
   }
 `;
 
@@ -169,23 +126,22 @@ const smootherstep = (x: number) => {
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
 
-/** Where the camera sits within a shot, 0 = act entering, 1 = act leaving. */
+/** Where the camera stands within a shot, 0 = act entering, 1 = act leaving. */
 function framing(shot: CinemaShot, t: number, tight = 1) {
-  const zoom = 1 + ((shot.zoom ?? 1.06) - 1) * tight;
   const fx = (shot.focus?.[0] ?? 0) * tight;
   const fy = (shot.focus?.[1] ?? 0) * tight;
-  const e = t - 0.5; // centred so the move brackets the act
+  const e = t - 0.5;
   switch (shot.move ?? "push") {
     case "panLeft":
-      return { zoom: zoom * (1 + t * 0.05 * tight), x: fx - e * 0.12 * tight, y: fy };
+      return { dolly: 0.3 * t, x: fx - e * 0.5 * tight, y: fy };
     case "panRight":
-      return { zoom: zoom * (1 + t * 0.05 * tight), x: fx + e * 0.12 * tight, y: fy };
+      return { dolly: 0.3 * t, x: fx + e * 0.5 * tight, y: fy };
     case "tiltUp":
-      return { zoom: zoom * (1 + t * 0.06 * tight), x: fx, y: fy + e * 0.1 * tight };
+      return { dolly: 0.35 * t, x: fx, y: fy + e * 0.42 * tight };
     case "pullBack":
-      return { zoom: zoom * (1 + (0.12 - t * 0.14) * tight), x: fx, y: fy - e * 0.03 * tight };
+      return { dolly: 0.7 - t * 0.85, x: fx, y: fy - e * 0.12 * tight };
     default:
-      return { zoom: zoom * (1 + t * 0.13 * tight), x: fx, y: fy };
+      return { dolly: 0.75 * t, x: fx, y: fy };
   }
 }
 
@@ -195,22 +151,22 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
   const [phone, setPhone] = useState<boolean | null>(null);
   const [mode, setMode] = useState("dawn");
 
-  // the phone plates are plain images, so they swap with the mode here
-  useEffect(() => {
-    setMode(readMode());
-    const onMode = (e: Event) => setMode((e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk");
-    window.addEventListener("cinemode", onMode);
-    return () => window.removeEventListener("cinemode", onMode);
-  }, []);
-
-  // Phones get plain crossfading plates: a portrait window onto a 16:9 photograph leaves the shader
-  // almost nothing to work with, and the effects cost more than they show at that size.
+  // Phones get plain crossfading plates: a portrait window onto a photograph leaves the camera
+  // almost nothing to work with, and the relief costs more than it shows at that size.
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 860px), (pointer: coarse)");
     const apply = () => setPhone(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  // the phone plates are plain images, so they swap with the mode here
+  useEffect(() => {
+    setMode(readMode());
+    const onMode = (e: Event) => setMode((e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk");
+    window.addEventListener("cinemode", onMode);
+    return () => window.removeEventListener("cinemode", onMode);
   }, []);
 
   // --- phone: scroll drives which plate is showing ---
@@ -245,11 +201,11 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         const on = k === i ? 1 - f : k === i + 1 ? f : 0;
         el.style.opacity = on.toFixed(3);
         if (k === i) {
-          // the plate on screen drifts toward the viewer as it hands over
-          el.style.transform = `scale(${(1.05 + f * 0.09).toFixed(3)}) translateZ(${(f * 40).toFixed(1)}px)`;
+          // the plate on screen comes toward the viewer as it hands over
+          el.style.transform = `scale(${(1.05 + f * 0.12).toFixed(3)}) translateZ(${(f * 60).toFixed(1)}px)`;
         } else if (k === i + 1) {
           // the next one rises from behind and settles
-          el.style.transform = `scale(${(1.14 - f * 0.09).toFixed(3)}) translateZ(${((f - 1) * 50).toFixed(1)}px)`;
+          el.style.transform = `scale(${(1.16 - f * 0.11).toFixed(3)}) translateZ(${((f - 1) * 70).toFixed(1)}px)`;
         }
       });
     };
@@ -267,6 +223,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
     };
   }, [phone, shots]);
 
+  // --- desktop: the scene in three dimensions ---
   useEffect(() => {
     if (phone !== false) return;
     const canvas = canvasRef.current;
@@ -277,15 +234,18 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
     const init = async () => {
       let renderer: THREE.WebGLRenderer;
       try {
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
       } catch {
         document.documentElement.classList.add("no-webgl");
         return;
       }
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const mobile = window.innerWidth < 860;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.6 : 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x05070b, 1);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
 
       const loader = new THREE.TextureLoader();
       const load = (src: string, srgb: boolean) =>
@@ -296,17 +256,45 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
           return t;
         });
 
-      /* Plates load on demand — a whole set at once was tens of megabytes of texture upload and
-         stalled the page. Each act pulls its own plate as the scroll approaches it, and the last
-         loaded plate stands in until the next one arrives. */
-      type Plate = { tex: Awaited<ReturnType<typeof load>>; dep: Awaited<ReturnType<typeof load>> };
-      const cache = new Map<string, Plate>();
+      type Loaded = { tex: Awaited<ReturnType<typeof load>>; dep: Awaited<ReturnType<typeof load>> };
+
+      /* One mesh stands in front and one behind; on a change of act they trade places, the front one
+         flying past the camera. Because each mesh carries its relief, that flight goes through the
+         scene rather than across a picture of it. */
+      const geometry = new THREE.PlaneGeometry(2, 2, 180, 110);
+      const makeStage = () => {
+        const uniforms = {
+          uTex: { value: null as THREE.Texture | null },
+          uDep: { value: null as THREE.Texture | null },
+          uCover: { value: new THREE.Vector2(1, 1) },
+          uRelief: { value: 1.25 },
+          uRes: { value: new THREE.Vector2(1, 1) },
+          uSun: { value: new THREE.Vector2(0.8, 0.35) },
+          uDim: { value: 0.42 },
+          uDawn: { value: 0 },
+          uFade: { value: 1 },
+          uGlow: { value: 0 },
+          uTime: { value: 0 },
+        };
+        const mesh = new THREE.Mesh(
+          geometry,
+          new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true }),
+        );
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+        return { mesh, uniforms };
+      };
+      const front = makeStage();
+      const back = makeStage();
+      back.mesh.renderOrder = -1;
+
+      // Plates load as the scroll reaches them rather than all at once.
+      const cache = new Map<string, Loaded>();
       const inFlight = new Set<string>();
-
-      const plateFor = (i: number, m: string) => cache.get(`${m}:${shots[i].plate}`);
-
+      const keyOf = (i: number, m: string) => `${m}:${shots[i].plate}`;
+      const plateFor = (i: number, m: string) => cache.get(keyOf(i, m));
       const ensure = (i: number, m: string) => {
-        const key = `${m}:${shots[i].plate}`;
+        const key = keyOf(i, m);
         if (cache.has(key) || inFlight.has(key)) return;
         inFlight.add(key);
         const base = plateSrc(shots[i].plate, m);
@@ -320,7 +308,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
             cache.set(key, { tex, dep });
           })
           .catch(() => {
-            // leave it out; the previous plate keeps showing
+            // the plate we already have keeps standing
           })
           .finally(() => inFlight.delete(key));
       };
@@ -334,99 +322,61 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         renderer.dispose();
         return;
       }
-      cache.set(`${mode}:${shots[0].plate}`, first);
+      cache.set(keyOf(0, mode), first);
       if (shots.length > 1) ensure(1, mode);
 
-      const scene = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      const uniforms = {
-        uTexA: { value: first.tex },
-        uTexB: { value: first.tex },
-        uDepA: { value: first.dep },
-        uDepB: { value: first.dep },
-        uCoverA: { value: new THREE.Vector2(1, 1) },
-        uCoverB: { value: new THREE.Vector2(1, 1) },
-        uFocusA: { value: new THREE.Vector2() },
-        uFocusB: { value: new THREE.Vector2() },
-        uZoomA: { value: 1 },
-        uZoomB: { value: 1 },
-        uDimA: { value: 0.4 },
-        uDimB: { value: 0.4 },
-        uParA: { value: new THREE.Vector2() },
-        uParB: { value: new THREE.Vector2() },
-        uSunA: { value: new THREE.Vector2(0.82, 0.38) },
-        uSunB: { value: new THREE.Vector2(0.82, 0.38) },
-        uMix: { value: 0 },
-        uTime: { value: 0 },
-        uReveal: { value: reduceMotion ? 1 : 0 },
-        uFlash: { value: 0 },
-        uBlur: { value: 0 },
-        uDawn: { value: 0 },
+      let dawnTarget = mode === "dawn" ? 1 : 0;
+      let dawn = dawnTarget;
+      const onMode = (e: Event) => {
+        const next = (e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk";
+        dawnTarget = next === "dawn" ? 1 : 0;
+        if (next !== mode) mode = next;
       };
-      const quad = new THREE.Mesh(
-        new THREE.PlaneGeometry(2, 2),
-        new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, depthTest: false, depthWrite: false }),
-      );
-      scene.add(quad);
+      window.addEventListener("cinemode", onMode);
 
-      // Dust drifting through the light
-      const motes = mobile ? 180 : 420;
-      const dust = new Float32Array(motes * 3);
-      const dustSeed = new Float32Array(motes);
-      for (let i = 0; i < motes; i++) {
-        dust[i * 3] = Math.random() * 2 - 1;
-        dust[i * 3 + 1] = Math.random() * 2 - 1;
-        dustSeed[i] = Math.random();
-      }
-      const dustGeo = new THREE.BufferGeometry();
-      dustGeo.setAttribute("position", new THREE.BufferAttribute(dust, 3));
-      dustGeo.setAttribute("aSeed", new THREE.BufferAttribute(dustSeed, 1));
-      const dustUniforms = { uTime: { value: 0 }, uPR: { value: renderer.getPixelRatio() }, uReveal: uniforms.uReveal };
-      const dustMat = new THREE.ShaderMaterial({
-        uniforms: dustUniforms,
-        transparent: true,
-        depthTest: false,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        vertexShader: /* glsl */ `
-          attribute float aSeed;
-          uniform float uTime;
-          uniform float uPR;
-          varying float vSeed;
-          void main() {
-            vec3 p = position;
-            p.y = mod(p.y + uTime * (0.012 + aSeed * 0.03) + 1.0, 2.0) - 1.0;
-            p.x += sin(uTime * 0.25 + aSeed * 30.0) * 0.06;
-            gl_Position = vec4(p.xy, 0.0, 1.0);
-            gl_PointSize = (1.0 + aSeed * 3.2) * uPR;
-            vSeed = aSeed;
-          }
-        `,
-        fragmentShader: /* glsl */ `
-          uniform float uTime;
-          uniform float uReveal;
-          varying float vSeed;
-          void main() {
-            float d = length(gl_PointCoord - 0.5);
-            if (d > 0.5) discard;
-            float a = pow(1.0 - d * 2.0, 2.0) * (0.12 + vSeed * 0.3);
-            a *= 0.5 + 0.5 * sin(uTime * 0.8 + vSeed * 40.0);
-            gl_FragColor = vec4(vec3(1.0, 0.94, 0.84), a * uReveal);
-          }
-        `,
-      });
-      scene.add(new THREE.Points(dustGeo, dustMat));
-
-      const cover = (tex: THREE.Texture, out: THREE.Vector2) => {
+      // how large a plate has to be to cover the frame at a given distance
+      const frameAt = (dist: number) => {
+        const h = 2 * Math.max(0.6, dist) * Math.tan((FOV * Math.PI) / 360);
+        return { w: h * camera.aspect, h };
+      };
+      const coverFor = (tex: THREE.Texture, planeW: number, planeH: number, out: THREE.Vector2) => {
         const img = tex.image as { width: number; height: number };
-        const frame = canvas.clientWidth / canvas.clientHeight;
+        const plane = planeW / planeH;
         const asset = img.width / img.height;
-        if (asset > frame) out.set(frame / asset, 1);
-        else out.set(1, asset / frame);
+        if (asset > plane) out.set(plane / asset, 1);
+        else out.set(1, asset / plane);
         return out;
       };
 
-      const resize = () => renderer.setSize(window.innerWidth, window.innerHeight, false);
+      const place = (stage: ReturnType<typeof makeStage>, plate: Loaded, shot: CinemaShot, z: number, fade: number) => {
+        // the plate sits at -BASE_Z and z slides it toward (or away from) the camera
+        const worldZ = -BASE_Z + z;
+        const dist = -worldZ;
+        const { w, h } = frameAt(dist);
+        const sw = w * 1.75; // margin so the feathered border stays off-screen while a plate rests
+        const sh = h * 1.75;
+        stage.mesh.position.z = worldZ;
+        stage.mesh.scale.set(sw / 2, sh / 2, 1);
+        stage.uniforms.uTex.value = plate.tex;
+        stage.uniforms.uDep.value = plate.dep;
+        coverFor(plate.tex, sw, sh, stage.uniforms.uCover.value);
+        stage.uniforms.uDim.value = shot.dim ?? 0.42;
+        stage.uniforms.uSun.value.set(shot.sun?.[0] ?? 0.8, 1 - (shot.sun?.[1] ?? 0.35));
+        stage.uniforms.uFade.value = fade;
+        stage.uniforms.uRelief.value = 0.55 / Math.max(0.5, sh / 6);
+        stage.mesh.visible = fade > 0.002;
+      };
+
+      const resize = () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        const pr = renderer.getPixelRatio();
+        front.uniforms.uRes.value.set(w * pr, h * pr);
+        back.uniforms.uRes.value.set(w * pr, h * pr);
+      };
       resize();
       window.addEventListener("resize", resize);
 
@@ -436,17 +386,6 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
       };
       window.addEventListener("pointermove", onPointer);
-
-      // dawn/dusk, set by CineMode and eased so the switch feels like the light changing
-      let dawnTarget = mode === "dawn" ? 1 : 0;
-      uniforms.uDawn.value = dawnTarget;
-      const onMode = (e: Event) => {
-        const next = (e as CustomEvent<string>).detail === "dawn" ? "dawn" : "dusk";
-        dawnTarget = next === "dawn" ? 1 : 0;
-        if (next === mode) return;
-        mode = next;
-      };
-      window.addEventListener("cinemode", onMode);
 
       const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-shot]"));
       const readProgress = () => {
@@ -476,57 +415,52 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
 
         const before = progress;
         progress += (readProgress() - progress) * (reduceMotion ? 1 : 1 - Math.pow(0.004, dt));
-        // how fast the camera is travelling between acts, smoothed
         velocity += (Math.min(1, Math.abs(progress - before) / Math.max(dt, 0.001) / 1.6) - velocity) * 0.18;
-        const i = Math.min(Math.floor(progress), Math.max(0, last - 1));
-        const f = Math.min(1, Math.max(0, progress - i));
-        const j = Math.min(i + 1, last);
 
-        // portrait frames show a narrow slice of a 16:9 plate, so the whole move is scaled down
-        const tight = window.innerHeight > window.innerWidth ? 0.3 : 1;
-        const A = framing(shots[i], f, tight);
-        const B = framing(shots[j], f - 1, tight);
+        const i = Math.min(Math.floor(progress), Math.max(0, last - 1));
+        const j = Math.min(i + 1, last);
+        const raw = Math.min(1, Math.max(0, progress - i));
+        const f = smootherstep(raw);
 
         ensure(i, mode);
         ensure(j, mode);
         if (j + 1 <= last) ensure(j + 1, mode);
         const plateA = plateFor(i, mode) ?? plateFor(j, mode) ?? first;
         const plateB = plateFor(j, mode) ?? plateA;
-        uniforms.uTexA.value = plateA.tex;
-        uniforms.uDepA.value = plateA.dep;
-        uniforms.uTexB.value = plateB.tex;
-        uniforms.uDepB.value = plateB.dep;
-        cover(plateA.tex, uniforms.uCoverA.value);
-        cover(plateB.tex, uniforms.uCoverB.value);
-        // the outgoing plate drifts toward the viewer, the incoming one settles back into place
-        uniforms.uZoomA.value = A.zoom * (1 + f * 0.05);
-        uniforms.uZoomB.value = B.zoom * (1 + (1 - f) * 0.07);
-        uniforms.uFocusA.value.set(A.x, A.y);
-        uniforms.uFocusB.value.set(B.x, B.y);
-        uniforms.uDimA.value = shots[i].dim ?? 0.42;
-        uniforms.uDimB.value = shots[j].dim ?? 0.42;
-        uniforms.uMix.value = smootherstep(f);
 
-        // depth parallax: pointer plus a little from the camera's own travel
+        dawn += (dawnTarget - dawn) * 0.06;
+
+        /* The flight. Dusk falls forward — the plate you are on rushes past the camera. Dawn opens
+           outward — the next scene comes up from further back and the light arrives with it. */
+        const A = framing(shots[i], raw);
+        const B = framing(shots[j], raw - 1);
+        const dusk = 1 - dawn;
+        const exitZ = A.dolly + f * (3.1 + dusk * 1.9);
+        const enterZ = B.dolly - (1 - f) * (3.2 + dawn * 1.8);
+
+        // the outgoing plate only gives way once it is nearly past
+        const fadeA = 1 - smootherstep((f - 0.62) / 0.38);
+        const fadeB = smootherstep(f / 0.6);
+
+        place(back, plateB, shots[j], enterZ, fadeB);
+        place(front, plateA, shots[i], exitZ, fadeA);
+
+        const glow = Math.sin(Math.PI * f) * (0.22 + velocity * 0.45);
+        front.uniforms.uGlow.value = reduceMotion ? 0 : glow;
+        back.uniforms.uGlow.value = reduceMotion ? 0 : glow * 0.6;
+        front.uniforms.uDawn.value = dawn;
+        back.uniforms.uDawn.value = dawn;
+        front.uniforms.uTime.value = reduceMotion ? 0 : time;
+        back.uniforms.uTime.value = reduceMotion ? 0 : time;
+
+        // the camera looks where the act asks, and drifts with the pointer
         smoothPointer.lerp(pointer, 0.045);
-        const par = 0.05 * tight;
-        uniforms.uParA.value.set(smoothPointer.x * par + f * 0.012 * tight, smoothPointer.y * par * 0.56);
-        uniforms.uParB.value.set(smoothPointer.x * par + (f - 1) * 0.012 * tight, smoothPointer.y * par * 0.56);
+        const camX = (A.x + (B.x - A.x) * f) * 1.5 + smoothPointer.x * 0.3;
+        const camY = (A.y + (B.y - A.y) * f) * 1.5 - smoothPointer.y * 0.2;
+        camera.position.set(camX, camY, 0);
+        camera.lookAt(camX * 0.4, camY * 0.4, -BASE_Z);
 
-        uniforms.uSunA.value.set(shots[i].sun?.[0] ?? 0.82, shots[i].sun?.[1] ?? 0.38);
-        uniforms.uSunB.value.set(shots[j].sun?.[0] ?? 0.82, shots[j].sun?.[1] ?? 0.38);
-
-        // the cut itself: a light leak and a touch of smear, both strongest mid-dissolve
-        const cut = Math.sin(Math.PI * Math.min(1, Math.max(0, f))) * (0.35 + 0.65 * velocity);
-        uniforms.uFlash.value = reduceMotion ? 0 : cut * 0.16;
-        uniforms.uBlur.value = reduceMotion ? 0 : velocity * 0.012 * tight;
-        // letterbox bars close in while the page is moving quickly
         root.style.setProperty("--cine-bar", `${(reduceMotion ? 0 : velocity * 34).toFixed(2)}px`);
-
-        uniforms.uDawn.value += (dawnTarget - uniforms.uDawn.value) * 0.06;
-        uniforms.uTime.value = reduceMotion ? 0 : time;
-        if (uniforms.uReveal.value < 1) uniforms.uReveal.value = Math.min(1, time / 1.4);
-        dustUniforms.uTime.value = reduceMotion ? 0 : time;
 
         renderer.render(scene, camera);
       };
@@ -538,10 +472,9 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         window.removeEventListener("resize", resize);
         window.removeEventListener("pointermove", onPointer);
         window.removeEventListener("cinemode", onMode);
-        quad.geometry.dispose();
-        (quad.material as THREE.Material).dispose();
-        dustGeo.dispose();
-        dustMat.dispose();
+        geometry.dispose();
+        (front.mesh.material as THREE.Material).dispose();
+        (back.mesh.material as THREE.Material).dispose();
         cache.forEach(({ tex, dep }) => {
           tex.dispose();
           dep.dispose();
@@ -568,7 +501,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
             src={phoneOf(plateSrc(s.plate, mode))}
             alt=""
             loading={i < 2 ? "eager" : "lazy"}
-            style={{ opacity: i === 0 ? 1 : 0, objectPosition: `${50 + (s.focus?.[0] ?? 0) * 60}% 50%` }}
+            style={{ opacity: i === 0 ? 1 : 0 }}
           />
         ))}
       </div>
