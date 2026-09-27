@@ -1451,3 +1451,37 @@
 .cine[data-mode="dawn"] .form__note {
   color: rgba(13, 23, 19, 0.72);
 }
+
+/* ---------- dawn on phones ---------- */
+
+@media (max-width: 860px) {
+  /* the menu panel turns to paper in dawn; its links are already dark ink */
+  .cine[data-mode="dawn"] .cine__nav {
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(13, 23, 19, 0.12);
+  }
+
+  .cine[data-mode="dawn"] .cine__nav a {
+    border-bottom-color: rgba(13, 23, 19, 0.08);
+  }
+
+  .cine[data-mode="dawn"] .cine__burger span,
+  .cine[data-mode="dawn"] .cine__toggle span {
+    background: var(--paper-ink);
+  }
+
+  /* portrait plates already carry their own light, so the scrim can sit back */
+  .cine[data-mode="dawn"] .cine__plates img {
+    filter: none;
+  }
+
+  .cine__plates::after {
+    background:
+      linear-gradient(rgba(4, 8, 13, 0.34), rgba(4, 8, 13, 0.46) 45%, rgba(4, 8, 13, 0.7));
+  }
+
+  .cine[data-mode="dawn"] .cine__plates::after {
+    background:
+      linear-gradient(rgba(6, 10, 16, 0.3), rgba(6, 10, 16, 0.42) 45%, rgba(6, 10, 16, 0.64));
+  }
+}

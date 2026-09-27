@@ -33,7 +33,7 @@ export type CinemaShot = {
 const plateSrc = (plate: string, mode: string) => `/images/${mode}/${mode}-${plate}`;
 const wideSrc = (base: string) => `${base}-w.jpg`;
 const depthOf = (base: string) => `${base}-depth.jpg`;
-const phoneOf = (base: string) => `${base}-m.jpg`;
+const phoneOf = (base: string) => `${base}-p.jpg`;
 const readMode = () => (document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dawn" ? "dawn" : "dusk");
 
 const vertexShader = /* glsl */ `
