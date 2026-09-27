@@ -719,3 +719,268 @@
     animation: none;
   }
 }
+
+/* ---------- inner page headers ---------- */
+
+.brew-top {
+  position: relative;
+  padding: 26vh var(--pad) clamp(60px, 9vw, 110px);
+  isolation: isolate;
+}
+
+.brew-top__lead {
+  margin: 22px 0 0;
+  max-width: 48ch;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--soft);
+}
+
+/* ---------- service blocks ---------- */
+
+.brew-service {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+  gap: clamp(30px, 5vw, 70px);
+  padding: clamp(60px, 9vw, 120px) var(--pad);
+  border-top: 1px solid var(--hair);
+}
+
+.brew-service .brew-head {
+  font-size: clamp(1.8rem, 3.4vw, 2.9rem);
+  margin-bottom: 16px;
+  max-width: 16ch;
+}
+
+.brew-service__tag {
+  margin: 0 0 16px;
+  font-family: var(--font-accent), Georgia, serif;
+  font-style: italic;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.brew-service__body {
+  margin: 0 0 14px;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--soft);
+}
+
+.brew-service__note {
+  margin: 18px 0 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--green);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--soft);
+}
+
+.brew-service figure {
+  margin: 30px 0 0;
+  aspect-ratio: 16 / 10;
+}
+
+.brew-service figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.9) contrast(1.05);
+}
+
+.brew-service__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  align-content: start;
+}
+
+.brew-service__groups > div {
+  background: var(--bg);
+  padding: 22px 22px 26px;
+}
+
+.brew-service__groups h3 {
+  margin-bottom: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: var(--green);
+}
+
+.brew-service__groups ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.brew-service__groups li {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+/* ---------- chain and ticks ---------- */
+
+.brew-chain {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.brew-chain li {
+  padding: 6px 13px;
+  border: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.brew-chain li + li::before {
+  content: "→";
+  margin-right: 9px;
+  color: var(--green);
+}
+
+.brew-ticks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px 30px;
+}
+
+.brew-ticks li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+  color: var(--soft);
+}
+
+.brew-ticks li::before {
+  content: "";
+  flex: none;
+  margin-top: 9px;
+  width: 14px;
+  height: 1px;
+  background: var(--green);
+}
+
+/* ---------- contact ---------- */
+
+.brew-contact {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+  gap: clamp(34px, 5vw, 80px);
+  padding: 24vh var(--pad) clamp(70px, 10vw, 130px);
+  isolation: isolate;
+}
+
+.brew-contact__details {
+  margin: 34px 0 0;
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid var(--hair);
+  padding-top: 22px;
+}
+
+.brew-contact__details dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 5px;
+}
+
+.brew-contact__details dd {
+  margin: 0;
+  font-size: 15px;
+}
+
+.brew-contact__details a {
+  border-bottom: 1px solid var(--green);
+}
+
+/* the shared form, dressed for the dark stage */
+.brew-contact__form .form {
+  background: rgba(22, 20, 18, 0.9);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.brew-contact__form .form label span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.brew-contact__form .form input,
+.brew-contact__form .form select,
+.brew-contact__form .form textarea {
+  background: rgba(244, 241, 236, 0.04);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  color: var(--ink);
+}
+
+.brew-contact__form .form input::placeholder,
+.brew-contact__form .form textarea::placeholder {
+  color: rgba(244, 241, 236, 0.32);
+}
+
+.brew-contact__form .form select option {
+  background: #14120f;
+  color: var(--ink);
+}
+
+.brew-contact__form .form input:focus,
+.brew-contact__form .form select:focus,
+.brew-contact__form .form textarea:focus {
+  border-color: var(--green);
+  background: rgba(244, 241, 236, 0.07);
+  box-shadow: none;
+}
+
+.brew-contact__form .btn--primary {
+  background: var(--ink);
+  color: #0b0a09;
+  border-radius: 999px;
+  box-shadow: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brew-contact__form .form--sent h3,
+.brew-contact__form .form--sent p {
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink);
+}
+
+@media (max-width: 1100px) {
+  .brew-service,
+  .brew-contact {
+    grid-template-columns: 1fr;
+  }
+}
