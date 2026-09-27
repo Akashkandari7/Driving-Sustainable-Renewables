@@ -28,7 +28,7 @@ AI doesn't replace engineering judgement — it strengthens it.
 ## Contact
 
 Email: info@dsrenewables.com
-Office: C 927, Sector 7, Dwarka, New Delhi 110045
+Office: 5th Floor, Tower 10A, DLF Cyber City, Gurugram, Haryana - 122002
 
 ## Design concepts
 
