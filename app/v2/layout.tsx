@@ -8,7 +8,13 @@ import "./cinema.css";
 
 export default function CinemaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="cine">
+    <div className="cine" data-mode="dawn">
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "(function(){try{var m=localStorage.getItem('dsr-cine-mode');if(m==='dusk'||m==='dawn'){var e=document.currentScript&&document.currentScript.parentElement;if(e)e.dataset.mode=m;}}catch(e){}})();",
+        }}
+      />
       <CineNav />
       <CineMode />
       <SmoothScroll />

@@ -10,15 +10,16 @@ const KEY = "dsr-cine-mode";
  * so the same photography reads as morning rather than golden hour.
  */
 export default function CineMode() {
-  const [mode, setMode] = useState<Mode>("dusk");
+  const [mode, setMode] = useState<Mode>("dawn");
 
   useEffect(() => {
-    let saved: Mode = "dusk";
+    const host = document.querySelector<HTMLElement>(".cine");
+    let saved: Mode = host?.dataset.mode === "dusk" ? "dusk" : "dawn";
     try {
       const v = localStorage.getItem(KEY);
       if (v === "dawn" || v === "dusk") saved = v;
     } catch {
-      // blocked storage: stay with dusk
+      // blocked storage: stay with whatever the markup set
     }
     apply(saved);
     setMode(saved);
