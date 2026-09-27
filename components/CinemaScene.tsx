@@ -78,6 +78,12 @@ const fragmentShader = /* glsl */ `
     return texture2D(tex, clamp(uv, 0.002, 0.998)).rgb;
   }
 
+  /* how near this pixel is in the outgoing plate: 1 at the foreground, 0 at the horizon */
+  float depthAt(sampler2D dep, vec2 cover, vec2 focus, float zoom, float drift) {
+    vec2 base = (vUv - 0.5) * cover / (zoom * (1.0 + drift)) + focus + 0.5;
+    return texture2D(dep, clamp(base, 0.002, 0.998)).r;
+  }
+
   /* a few taps along the scroll direction stand in for shutter smear while the page is moving fast */
   vec3 smeared(sampler2D tex, sampler2D dep, vec2 cover, vec2 focus, float zoom, vec2 par, float drift) {
     vec3 sum = vec3(0.0);
@@ -106,18 +112,33 @@ const fragmentShader = /* glsl */ `
     float breathe = sin(uTime * 0.06) * 0.01;
     vec3 a = smeared(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe);
     vec3 b = smeared(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe);
-    vec3 col = mix(a, b, uMix);
-    float dim = mix(uDimA, uDimB, uMix);
+
+
+    /* Scenes change through depth, not as a flat dissolve. Dawn hands the frame over from the
+       horizon forward, as light arriving; dusk lets go of the foreground first and falls back into
+       the next scene. A soft band of light rides the boundary. */
+    float dA = depthAt(uDepA, uCoverA, uFocusA, uZoomA, breathe);
+    float key = mix(1.0 - dA, dA, uDawn);
+    float band = 0.26;
+    float t = smoothstep(key - band, key + band, uMix * (1.0 + band * 2.0) - band);
+    vec3 col = mix(a, b, t);
+
+    float dim = mix(uDimA, uDimB, t);
 
     // lens dispersion towards the edges of the frame
     vec2 r = vUv - 0.5;
     float ca = dot(r, r) * (0.0018 + uBlur * 0.16);
     col.r = mix(
       plate(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe, r * ca).r,
-      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, r * ca).r, uMix);
+      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, r * ca).r, t);
     col.b = mix(
       plate(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe, -r * ca).b,
-      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, -r * ca).b, uMix);
+      plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, -r * ca).b, t);
+
+    /* light riding the boundary — added after the dispersion, which rewrites red and blue */
+    float edge = exp(-pow((uMix * (1.0 + band * 2.0) - band - key) / band, 2.2) * 2.2);
+    edge *= smoothstep(0.0, 0.08, uMix) * smoothstep(1.0, 0.92, uMix);
+    col += mix(vec3(0.85, 0.42, 0.16), vec3(1.0, 0.84, 0.58), uDawn) * edge * 0.3;
 
     // grade: dusk deepens the shadows; dawn lifts the whole frame and cools the warmth back
     col = pow(col, mix(vec3(0.94), vec3(0.84), uDawn));
@@ -223,8 +244,13 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       layers.forEach((el, k) => {
         const on = k === i ? 1 - f : k === i + 1 ? f : 0;
         el.style.opacity = on.toFixed(3);
-        // a slow drift so the plate is not completely static while it is on screen
-        el.style.transform = `scale(${(1.06 + (k === i ? f : 0) * 0.05).toFixed(3)})`;
+        if (k === i) {
+          // the plate on screen drifts toward the viewer as it hands over
+          el.style.transform = `scale(${(1.05 + f * 0.09).toFixed(3)}) translateZ(${(f * 40).toFixed(1)}px)`;
+        } else if (k === i + 1) {
+          // the next one rises from behind and settles
+          el.style.transform = `scale(${(1.14 - f * 0.09).toFixed(3)}) translateZ(${((f - 1) * 50).toFixed(1)}px)`;
+        }
       });
     };
 
@@ -472,8 +498,9 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         uniforms.uDepB.value = plateB.dep;
         cover(plateA.tex, uniforms.uCoverA.value);
         cover(plateB.tex, uniforms.uCoverB.value);
-        uniforms.uZoomA.value = A.zoom;
-        uniforms.uZoomB.value = B.zoom;
+        // the outgoing plate drifts toward the viewer, the incoming one settles back into place
+        uniforms.uZoomA.value = A.zoom * (1 + f * 0.05);
+        uniforms.uZoomB.value = B.zoom * (1 + (1 - f) * 0.07);
         uniforms.uFocusA.value.set(A.x, A.y);
         uniforms.uFocusB.value.set(B.x, B.y);
         uniforms.uDimA.value = shots[i].dim ?? 0.42;

@@ -1485,3 +1485,19 @@
       linear-gradient(rgba(6, 10, 16, 0.3), rgba(6, 10, 16, 0.42) 45%, rgba(6, 10, 16, 0.64));
   }
 }
+
+/* ---------- phone: the same handover, in CSS ---------- */
+
+@media (max-width: 860px) {
+  /* Plates sit in a perspective box so the change of scene reads as depth rather than a fade:
+     the outgoing frame comes toward the viewer, the next one rises from behind it. */
+  .cine__plates {
+    perspective: 1400px;
+    perspective-origin: 50% 45%;
+  }
+
+  .cine__plates img {
+    transform-origin: 50% 45%;
+    transition: opacity 0.85s cubic-bezier(0.3, 0.7, 0.2, 1), transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
