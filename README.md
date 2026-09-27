@@ -30,6 +30,18 @@ AI doesn't replace engineering judgement — it strengthens it.
 Email: info@dsrenewables.com
 Office: C 927, Sector 7, Dwarka, New Delhi 110045
 
+## Design concepts
+
+Four directions are published side by side at `/samples/`, each carrying the same four pages
+(Home, About Us, Services, Contact Us) and the same content:
+
+| | Concept | |
+| --- | --- | --- |
+| A | Cinematic | Photography with real depth; the camera moves through it. Dawn and dusk. |
+| B | Editorial | Light page, rounded plates, index-style services. |
+| C | Product house | Dark stage, annotated callouts, spec detail. |
+| D | Technical | Particle figures per section, light and dark. |
+
 ## Running the site
 
 ```bash
