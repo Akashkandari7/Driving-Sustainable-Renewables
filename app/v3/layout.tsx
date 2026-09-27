@@ -8,7 +8,7 @@ export default function RidgeLayout({ children }: { children: React.ReactNode })
     <div className="ridge">
       <div className="ridge__strip">
         <p>
-          <span>New Delhi, IN</span>
+          <span>Gurugram, IN</span>
           <i>\</i>
           <span>Solar &amp; Energy Storage</span>
           <i>\</i>

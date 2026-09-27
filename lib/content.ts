@@ -93,5 +93,5 @@ export const scenes: Scene[] = [
 
 export const contact = {
   email: "info@dsrenewables.com",
-  address: "C 927, Sector 7, Dwarka, New Delhi 110045",
+  address: "5th Floor, Tower 10A, DLF Cyber City, Gurugram, Haryana - 122002",
 };
