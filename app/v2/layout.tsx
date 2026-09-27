@@ -5,6 +5,7 @@ import CineMode from "@/components/CineMode";
 import SmoothScroll from "@/components/SmoothScroll";
 import { contact, nav } from "@/lib/dsr";
 import "./cinema.css";
+import { asset } from "@/lib/asset";
 
 export default function CinemaLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,8 +24,8 @@ export default function CinemaLayout({ children }: { children: React.ReactNode }
       {children}
       <footer className="cine__foot">
         <div>
-          <img src="/images/logo-dark.png" alt="DSR" width={619} height={197} className="cine__foot-logo cine__logo-dusk" />
-          <img src="/images/logo-light.png" alt="" aria-hidden="true" width={619} height={197} className="cine__foot-logo cine__logo-dawn" />
+          <img src={asset("/images/logo-dark.png")} alt="DSR" width={619} height={197} className="cine__foot-logo cine__logo-dusk" />
+          <img src={asset("/images/logo-light.png")} alt="" aria-hidden="true" width={619} height={197} className="cine__foot-logo cine__logo-dawn" />
           <p>Independent Quality, Engineering &amp; Advisory Solutions for Solar and Energy Storage.</p>
         </div>
         <nav aria-label="Footer">

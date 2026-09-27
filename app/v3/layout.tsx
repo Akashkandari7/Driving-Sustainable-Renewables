@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { contact } from "@/lib/dsr";
 import "./ridge.css";
+import { asset } from "@/lib/asset";
 
 /** The light page frame: a utility strip across the top, everything else inside rounded cards. */
 export default function RidgeLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +28,7 @@ export default function RidgeLayout({ children }: { children: React.ReactNode })
 
       <footer className="ridge__foot">
         <div>
-          <img src="/images/logo-light.png" alt="DSR" width={619} height={197} />
+          <img src={asset("/images/logo-light.png")} alt="DSR" width={619} height={197} />
           <p>Independent Quality, Engineering &amp; Advisory Solutions for Solar and Energy Storage.</p>
         </div>
         <nav aria-label="Footer">

@@ -29,18 +29,29 @@ export default function ContactForm() {
     setState("sending");
     setNote("");
 
-    try {
-      const res = await fetch("/api/enquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+    // The site is served as static files, so the enquiry goes straight from the browser to the
+    // form service. Without a key configured we hand it to the visitor's mail app instead.
+    const key = process.env.NEXT_PUBLIC_WEB3FORMS_KEY;
 
-      if (data.ok) {
-        setState("sent");
-        form.reset();
-        return;
+    try {
+      if (key) {
+        const res = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            access_key: key,
+            subject: `Project enquiry — ${payload.service} — ${payload.company || payload.name}`,
+            from_name: "DSR website",
+            replyto: payload.email,
+            ...payload,
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { success?: boolean };
+        if (data.success) {
+          setState("sent");
+          form.reset();
+          return;
+        }
       }
 
       // Delivery isn't wired up yet (or failed): hand the enquiry to the visitor's mail app

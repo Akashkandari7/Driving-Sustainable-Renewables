@@ -12,3 +12,6 @@ AGENTS.md
 # Client source material and scratch references (kept local)
 /Images/
 *.docx
+
+# static export output
+out/

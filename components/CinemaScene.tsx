@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { BASE } from "@/lib/asset";
 
 /**
  * The backdrop is built in three dimensions.
@@ -34,7 +35,7 @@ export type CinemaShot = {
   label?: string;
 };
 
-const plateSrc = (plate: string, mode: string) => `/images/${mode}/${mode}-${plate}`;
+const plateSrc = (plate: string, mode: string) => `${BASE}/images/${mode}/${mode}-${plate}`;
 const wideSrc = (base: string) => `${base}-w.jpg`;
 const depthOf = (base: string) => `${base}-depth.jpg`;
 const phoneOf = (base: string) => `${base}-p.jpg`;
@@ -342,9 +343,9 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       const coverFor = (tex: THREE.Texture, planeW: number, planeH: number, out: THREE.Vector2) => {
         const img = tex.image as { width: number; height: number };
         const plane = planeW / planeH;
-        const asset = img.width / img.height;
-        if (asset > plane) out.set(plane / asset, 1);
-        else out.set(1, asset / plane);
+        const ratio = img.width / img.height;
+        if (ratio > plane) out.set(plane / ratio, 1);
+        else out.set(1, ratio / plane);
         return out;
       };
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
+import { asset } from "@/lib/asset";
 
 const links = [
   { href: "#quality-assurance", label: "Services" },
@@ -19,8 +20,8 @@ export default function Header() {
       <div className="header__bar glass">
         <a href="#home" className="logo" onClick={close} aria-label="DSR — Driving Sustainable Renewables, home">
           {/* Which variant shows is decided in CSS from html[data-theme], so it matches the server HTML */}
-          <img className="logo__img logo__img--light" src="/images/logo-light.png" alt="DSR" width={619} height={197} />
-          <img className="logo__img logo__img--dark" src="/images/logo-dark.png" alt="" aria-hidden="true" width={619} height={197} />
+          <img className="logo__img logo__img--light" src={asset("/images/logo-light.png")} alt="DSR" width={619} height={197} />
+          <img className="logo__img logo__img--dark" src={asset("/images/logo-dark.png")} alt="" aria-hidden="true" width={619} height={197} />
           <span className="logo__tag">Driving Sustainable Renewables</span>
         </a>
         <nav className="header__nav" aria-label="Main">

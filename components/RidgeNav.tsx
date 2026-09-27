@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { asset } from "@/lib/asset";
 
 const links = [
   { href: "/v3", label: "Home" },
@@ -19,7 +20,7 @@ export default function RidgeNav() {
   return (
     <nav className={`ridge-nav${open ? " is-open" : ""}`} aria-label="Main">
       <Link href="/v3" className="ridge-nav__badge" aria-label="DSR home" onClick={() => setOpen(false)}>
-        <img src="/images/logo-light.png" alt="DSR" width={619} height={197} />
+        <img src={asset("/images/logo-light.png")} alt="DSR" width={619} height={197} />
       </Link>
 
       <div className="ridge-nav__pill">
