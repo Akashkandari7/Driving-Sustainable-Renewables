@@ -1,8 +1,8 @@
 import Link from "next/link";
 import CineNav from "@/components/CineNav";
 import CineReveal from "@/components/CineReveal";
+import CineMode from "@/components/CineMode";
 import SmoothScroll from "@/components/SmoothScroll";
-import CineHud from "@/components/CineHud";
 import { contact, nav } from "@/lib/dsr";
 import "./cinema.css";
 
@@ -10,9 +10,9 @@ export default function CinemaLayout({ children }: { children: React.ReactNode }
   return (
     <div className="cine">
       <CineNav />
+      <CineMode />
       <SmoothScroll />
       <CineReveal />
-      <CineHud />
       <div className="cine__bars" aria-hidden="true" />
       {children}
       <footer className="cine__foot">

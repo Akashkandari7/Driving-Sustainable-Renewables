@@ -63,6 +63,7 @@ const fragmentShader = /* glsl */ `
   uniform float uReveal;
   uniform float uFlash;
   uniform float uBlur;
+  uniform float uDawn;
   varying vec2 vUv;
 
   /* cover-fit sampling, displaced by the plate's depth so near things travel further */
@@ -114,10 +115,10 @@ const fragmentShader = /* glsl */ `
       plate(uTexA, uDepA, uCoverA, uFocusA, uZoomA, uParA, breathe, -r * ca).b,
       plate(uTexB, uDepB, uCoverB, uFocusB, uZoomB, uParB, breathe, -r * ca).b, uMix);
 
-    // grade: deepen the shadows, keep the sun warm
-    col = pow(col, vec3(1.06));
-    col *= mix(vec3(1.0), vec3(1.04, 0.99, 0.92), 0.5);
-    col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, 1.12);
+    // grade: dusk deepens the shadows; dawn lifts the whole frame and cools the warmth back
+    col = pow(col, mix(vec3(1.06), vec3(0.82), uDawn));
+    col *= mix(mix(vec3(1.0), vec3(1.04, 0.99, 0.92), 0.5), vec3(1.1, 1.06, 1.0), uDawn);
+    col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, mix(1.12, 1.05, uDawn));
 
     // sun bloom, blended between the two plates
     col += mix(flare(uSunA, 1.0 - uMix), flare(uSunB, uMix), uMix) * 0.55;
@@ -125,9 +126,9 @@ const fragmentShader = /* glsl */ `
     // darken towards the edges and the lower third, where the copy sits
     vec2 d = vUv - 0.5;
     float vig = 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.05, 1.25)));
-    col *= mix(0.55, 1.0, vig);
-    col *= 1.0 - dim * smoothstep(0.35, 1.0, 1.0 - vUv.y) * 0.85;
-    col *= 1.0 - dim * 0.25;
+    col *= mix(mix(0.55, 1.0, vig), mix(0.82, 1.0, vig), uDawn);
+    col *= 1.0 - dim * smoothstep(0.35, 1.0, 1.0 - vUv.y) * mix(0.85, 0.45, uDawn);
+    col *= 1.0 - dim * mix(0.25, 0.08, uDawn);
 
     // light leak across the cut between two shots
     col += vec3(1.0, 0.86, 0.66) * uFlash * (0.35 + 0.65 * smoothstep(0.0, 1.0, vUv.x));
@@ -289,6 +290,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         uReveal: { value: reduceMotion ? 1 : 0 },
         uFlash: { value: 0 },
         uBlur: { value: 0 },
+        uDawn: { value: 0 },
       };
       const quad = new THREE.Mesh(
         new THREE.PlaneGeometry(2, 2),
@@ -364,6 +366,14 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       };
       window.addEventListener("pointermove", onPointer);
 
+      // dawn/dusk, set by CineMode and eased so the switch feels like the light changing
+      let dawnTarget = document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dawn" ? 1 : 0;
+      uniforms.uDawn.value = dawnTarget;
+      const onMode = (e: Event) => {
+        dawnTarget = (e as CustomEvent<string>).detail === "dawn" ? 1 : 0;
+      };
+      window.addEventListener("cinemode", onMode);
+
       const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-shot]"));
       const readProgress = () => {
         const vc = window.innerHeight / 2;
@@ -433,6 +443,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         // letterbox bars close in while the page is moving quickly
         root.style.setProperty("--cine-bar", `${(reduceMotion ? 0 : velocity * 34).toFixed(2)}px`);
 
+        uniforms.uDawn.value += (dawnTarget - uniforms.uDawn.value) * 0.06;
         uniforms.uTime.value = reduceMotion ? 0 : time;
         if (uniforms.uReveal.value < 1) uniforms.uReveal.value = Math.min(1, time / 1.4);
         dustUniforms.uTime.value = reduceMotion ? 0 : time;
@@ -446,6 +457,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         root.style.removeProperty("--cine-bar");
         window.removeEventListener("resize", resize);
         window.removeEventListener("pointermove", onPointer);
+        window.removeEventListener("cinemode", onMode);
         quad.geometry.dispose();
         (quad.material as THREE.Material).dispose();
         dustGeo.dispose();

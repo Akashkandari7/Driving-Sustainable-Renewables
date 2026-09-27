@@ -29,7 +29,7 @@ export const nav = [
 
 export const home = {
   hero: {
-    eyebrow: "01 — Home",
+    eyebrow: "Home",
     title: ["Building Tomorrow's Trust.", "With Engineering Intelligence."],
     lead: "Independent Quality, Engineering & Advisory Solutions for Solar and Energy Storage.",
     body: "From Site planning and Technology selection to Factory Quality Assurance, Construction Monitoring and Commissioning support, DSR works with Renewable Energy Developers, Independent Power Producers (IPPs), EPCs, Investors, Manufacturers and Project Stakeholders and help them make informed decisions, manage technical risk and build confidence across the Asset lifecycle.",
@@ -134,7 +134,7 @@ export const home = {
 
 export const about = {
   hero: {
-    eyebrow: "02 — About Us",
+    eyebrow: "About Us",
     title: "Built for the Next Generation of Renewable Energy.",
     body: [
       "DSR — Driving Sustainable Renewables — is an Independent Renewable Energy Technical Services Company combining Engineering, Quality Assurance and Project Execution support.",
@@ -222,7 +222,7 @@ export type Service = {
 };
 
 export const servicesIntro = {
-  eyebrow: "03 — Services",
+  eyebrow: "Services",
   title: "Engineering. Quality. Execution.",
   lead: "Technical Services across the Renewable Energy project lifecycle.",
   body: "DSR supports clients from early-stage Planning and Engineering through Procurement, Manufacturing, Construction and Commissioning.",

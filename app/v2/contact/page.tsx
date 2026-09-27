@@ -21,7 +21,7 @@ export default function ContactPage() {
       <main>
         <section data-shot data-label="Contact" className="cine__act cine__act--contact">
           <div className="cine__copy reveal">
-            <p className="cine__eyebrow">04 — Contact Us</p>
+            <p className="cine__eyebrow">Contact Us</p>
             <CineHeading as="h1" text="Discuss Your Project." />
             <p className="cine__lead">
               Tell us where you are in the project lifecycle — planning, procurement, manufacturing, construction or

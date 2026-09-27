@@ -37,7 +37,7 @@ export default function ServicesPage() {
               {services.map((s) => (
                 <li key={s.num}>
                   <a href={`#service-${s.num}`}>
-                    <span>{s.num}</span>
+                    <span className="cine__index-dot" aria-hidden="true" />
                     {s.name}
                   </a>
                 </li>
@@ -50,7 +50,7 @@ export default function ServicesPage() {
           <section key={s.num} id={`service-${s.num}`} data-shot data-label="01 Engineering" className="cine__act cine__act--service">
             <div className="cine__copy reveal">
               <p className="cine__eyebrow">
-                <span>Service {s.num}</span>
+                <span>Service</span>
               </p>
               <CineHeading text={s.name} />
               <p className="cine__lead">{s.tagline}</p>

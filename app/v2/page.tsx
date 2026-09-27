@@ -56,9 +56,9 @@ export default function Home() {
             ))}
           </div>
           <ol className="cine__stages reveal">
-            {promise.stages.map((s, i) => (
+            {promise.stages.map((s) => (
               <li key={s.key}>
-                <span className="cine__stage-num">{String(i + 1).padStart(2, "0")}</span>
+                <span className="cine__stage-dot" aria-hidden="true" />
                 <h3>{s.key}</h3>
                 <p>{s.line}</p>
               </li>
