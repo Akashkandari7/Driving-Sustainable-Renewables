@@ -1128,6 +1128,8 @@
   --soft: rgba(255, 255, 255, 0.88);
   --dim: rgba(255, 255, 255, 0.7);
   --faint: rgba(13, 23, 19, 0.14);
+  /* type that sits on paper rather than on the plate — --ink stays light for the plate copy */
+  --paper-ink: #0d1713;
 }
 
 .cine[data-mode="dawn"] .cine__mode-dot {
@@ -1153,6 +1155,15 @@
 .cine[data-mode="dawn"] h2 {
   color: #fff;
   -webkit-text-fill-color: #fff;
+}
+
+/* card and panel headings sit on paper, so they take the dark ink */
+.cine[data-mode="dawn"] .cine__card h3,
+.cine[data-mode="dawn"] .cine__stages p,
+.cine[data-mode="dawn"] .cine__group h3,
+.cine[data-mode="dawn"] .cine__group li,
+.cine[data-mode="dawn"] .cine__panel .form label span {
+  -webkit-text-fill-color: currentColor;
 }
 
 .cine[data-mode="dawn"] .cine__lead {
@@ -1185,7 +1196,7 @@
 .cine[data-mode="dawn"] .cine__stages li {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(13, 23, 19, 0.1);
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__stages {
@@ -1196,8 +1207,8 @@
 .cine[data-mode="dawn"] .cine__card h3,
 .cine[data-mode="dawn"] .cine__stages p,
 .cine[data-mode="dawn"] .cine__group li {
-  color: var(--ink);
-  -webkit-text-fill-color: var(--ink);
+  color: var(--paper-ink);
+  -webkit-text-fill-color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__card p,
@@ -1252,7 +1263,7 @@
 
 .cine[data-mode="dawn"] .cine__nav a:hover,
 .cine[data-mode="dawn"] .cine__nav a[aria-current="page"] {
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__logo img,
@@ -1263,7 +1274,7 @@
 .cine[data-mode="dawn"] .cine__cta {
   border-color: rgba(13, 23, 19, 0.24);
   background: rgba(13, 23, 19, 0.06);
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__cta:hover {
@@ -1286,17 +1297,24 @@
 .cine[data-mode="dawn"] .cine__foot {
   background: #f4f6f4;
   border-top-color: rgba(13, 23, 19, 0.12);
-  color: rgba(13, 23, 19, 0.7);
+  color: rgba(13, 23, 19, 0.72);
+}
+
+/* the footer sits on paper in dawn, so everything in it takes the dark ink */
+.cine[data-mode="dawn"] .cine__foot p,
+.cine[data-mode="dawn"] .cine__foot a,
+.cine[data-mode="dawn"] .cine__copyright {
+  color: rgba(13, 23, 19, 0.72);
 }
 
 .cine[data-mode="dawn"] .cine__foot a:hover {
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__mode {
   background: rgba(255, 255, 255, 0.86);
   border-color: rgba(13, 23, 19, 0.14);
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__panel .form {
@@ -1313,7 +1331,7 @@
 .cine[data-mode="dawn"] .cine__panel .form textarea {
   background: #f7f9f7;
   border-color: rgba(13, 23, 19, 0.16);
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__panel .form input::placeholder,
@@ -1323,7 +1341,7 @@
 
 .cine[data-mode="dawn"] .cine__panel .form select option {
   background: #fff;
-  color: var(--ink);
+  color: var(--paper-ink);
 }
 
 .cine[data-mode="dawn"] .cine__panel .btn--primary {
