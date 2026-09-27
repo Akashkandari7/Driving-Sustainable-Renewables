@@ -1240,8 +1240,15 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
-.cine[data-mode="dawn"] .cine__tags span,
-.cine[data-mode="dawn"] .cine__chain li {
+/* chips inside a light card */
+.cine[data-mode="dawn"] .cine__card .cine__tags span {
+  border-color: rgba(13, 23, 19, 0.2);
+  color: var(--paper-ink);
+}
+
+/* chips that sit straight on the plate */
+.cine[data-mode="dawn"] .cine__chain li,
+.cine[data-mode="dawn"] .points li {
   border-color: rgba(255, 255, 255, 0.34);
   color: rgba(255, 255, 255, 0.92);
 }
@@ -1266,10 +1273,13 @@
   color: var(--paper-ink);
 }
 
-/* the wordmark is light on the plate and dark on paper */
-.cine__logo-dawn { display: none; }
-.cine[data-mode="dawn"] .cine__logo-dusk { display: none; }
-.cine[data-mode="dawn"] .cine__logo-dawn { display: block; }
+/* the wordmark is light on the plate and dark on paper — these have to outrank `.cine__logo img` */
+.cine__logo .cine__logo-dawn,
+.cine__foot .cine__logo-dawn { display: none; }
+.cine[data-mode="dawn"] .cine__logo .cine__logo-dusk,
+.cine[data-mode="dawn"] .cine__foot .cine__logo-dusk { display: none; }
+.cine[data-mode="dawn"] .cine__logo .cine__logo-dawn,
+.cine[data-mode="dawn"] .cine__foot .cine__logo-dawn { display: block; }
 
 /* flow labels sit on a light card in dawn */
 .cine[data-mode="dawn"] .cine__flow {
@@ -1371,4 +1381,73 @@
   background:
     linear-gradient(rgba(10, 16, 14, 0.22), rgba(10, 16, 14, 0.4) 45%, rgba(10, 16, 14, 0.62)),
     radial-gradient(120% 70% at 70% 18%, rgba(255, 196, 120, 0.16), transparent 62%);
+}
+
+/* ---------- form states ---------- */
+
+.form__trap {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.form--sent {
+  padding: clamp(28px, 4vw, 44px);
+  border-radius: 24px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  text-align: left;
+}
+
+.form__tick {
+  margin: 0;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green);
+  color: #04231a;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.form--sent h3 {
+  margin: 8px 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.25rem;
+}
+
+.form--sent p {
+  margin: 0;
+  color: var(--soft);
+  font-size: 15px;
+}
+
+.form--sent .btn {
+  margin-top: 14px;
+}
+
+.form__note {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--soft);
+}
+
+.form button[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.cine[data-mode="dawn"] .form--sent h3 {
+  color: var(--paper-ink);
+  -webkit-text-fill-color: var(--paper-ink);
+}
+
+.cine[data-mode="dawn"] .form--sent p,
+.cine[data-mode="dawn"] .form__note {
+  color: rgba(13, 23, 19, 0.72);
 }

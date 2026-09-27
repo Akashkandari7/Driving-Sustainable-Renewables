@@ -30,9 +30,10 @@ export type CinemaShot = {
   label?: string;
 };
 
-const plateSrc = (plate: string, mode: string) => `/images/${mode}/${mode}-${plate}.png`;
-const depthSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-depth.jpg");
-const phoneSrc = (src: string) => src.replace(/\.(png|jpe?g)$/i, "-m.jpg");
+const plateSrc = (plate: string, mode: string) => `/images/${mode}/${mode}-${plate}`;
+const wideSrc = (base: string) => `${base}-w.jpg`;
+const depthOf = (base: string) => `${base}-depth.jpg`;
+const phoneOf = (base: string) => `${base}-m.jpg`;
 const readMode = () => (document.querySelector<HTMLElement>(".cine")?.dataset.mode === "dawn" ? "dawn" : "dusk");
 
 const vertexShader = /* glsl */ `
@@ -269,37 +270,54 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
           return t;
         });
 
-      type Plate = { tex: THREE.Texture; dep: THREE.Texture };
-      const sets = new Map<string, Plate[]>();
-      const loadSet = async (m: string) => {
-        const cached = sets.get(m);
-        if (cached) return cached;
-        const set = await Promise.all(
-          shots.map(async (sh) => {
-            const src = plateSrc(sh.plate, m);
-            return { tex: await load(src, true), dep: await load(depthSrc(src), false) };
-          }),
-        );
-        sets.set(m, set);
-        return set;
+      /* Plates load on demand — a whole set at once was tens of megabytes of texture upload and
+         stalled the page. Each act pulls its own plate as the scroll approaches it, and the last
+         loaded plate stands in until the next one arrives. */
+      type Plate = { tex: Awaited<ReturnType<typeof load>>; dep: Awaited<ReturnType<typeof load>> };
+      const cache = new Map<string, Plate>();
+      const inFlight = new Set<string>();
+
+      const plateFor = (i: number, m: string) => cache.get(`${m}:${shots[i].plate}`);
+
+      const ensure = (i: number, m: string) => {
+        const key = `${m}:${shots[i].plate}`;
+        if (cache.has(key) || inFlight.has(key)) return;
+        inFlight.add(key);
+        const base = plateSrc(shots[i].plate, m);
+        Promise.all([load(wideSrc(base), true), load(depthOf(base), false)])
+          .then(([tex, dep]) => {
+            if (disposed) {
+              tex.dispose();
+              dep.dispose();
+              return;
+            }
+            cache.set(key, { tex, dep });
+          })
+          .catch(() => {
+            // leave it out; the previous plate keeps showing
+          })
+          .finally(() => inFlight.delete(key));
       };
 
       let mode = readMode();
-      const loadedOrNull = await loadSet(mode).catch(() => null);
-      if (disposed || !loadedOrNull) {
+      const firstBase = plateSrc(shots[0].plate, mode);
+      const first = await Promise.all([load(wideSrc(firstBase), true), load(depthOf(firstBase), false)])
+        .then(([tex, dep]) => ({ tex, dep }))
+        .catch(() => null);
+      if (disposed || !first) {
         renderer.dispose();
         return;
       }
-      let loaded = loadedOrNull;
+      cache.set(`${mode}:${shots[0].plate}`, first);
+      if (shots.length > 1) ensure(1, mode);
 
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      const second = Math.min(1, loaded.length - 1);
       const uniforms = {
-        uTexA: { value: loaded[0].tex },
-        uTexB: { value: loaded[second].tex },
-        uDepA: { value: loaded[0].dep },
-        uDepB: { value: loaded[second].dep },
+        uTexA: { value: first.tex },
+        uTexB: { value: first.tex },
+        uDepA: { value: first.dep },
+        uDepB: { value: first.dep },
         uCoverA: { value: new THREE.Vector2(1, 1) },
         uCoverB: { value: new THREE.Vector2(1, 1) },
         uFocusA: { value: new THREE.Vector2() },
@@ -401,14 +419,6 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         dawnTarget = next === "dawn" ? 1 : 0;
         if (next === mode) return;
         mode = next;
-        // the other set loads in the background and is swapped in when it is ready
-        loadSet(next)
-          .then((set) => {
-            if (!disposed && mode === next) loaded = set;
-          })
-          .catch(() => {
-            // keep showing the set we have
-          });
       };
       window.addEventListener("cinemode", onMode);
 
@@ -451,12 +461,17 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         const A = framing(shots[i], f, tight);
         const B = framing(shots[j], f - 1, tight);
 
-        uniforms.uTexA.value = loaded[i].tex;
-        uniforms.uDepA.value = loaded[i].dep;
-        uniforms.uTexB.value = loaded[j].tex;
-        uniforms.uDepB.value = loaded[j].dep;
-        cover(loaded[i].tex, uniforms.uCoverA.value);
-        cover(loaded[j].tex, uniforms.uCoverB.value);
+        ensure(i, mode);
+        ensure(j, mode);
+        if (j + 1 <= last) ensure(j + 1, mode);
+        const plateA = plateFor(i, mode) ?? plateFor(j, mode) ?? first;
+        const plateB = plateFor(j, mode) ?? plateA;
+        uniforms.uTexA.value = plateA.tex;
+        uniforms.uDepA.value = plateA.dep;
+        uniforms.uTexB.value = plateB.tex;
+        uniforms.uDepB.value = plateB.dep;
+        cover(plateA.tex, uniforms.uCoverA.value);
+        cover(plateB.tex, uniforms.uCoverB.value);
         uniforms.uZoomA.value = A.zoom;
         uniforms.uZoomB.value = B.zoom;
         uniforms.uFocusA.value.set(A.x, A.y);
@@ -500,12 +515,10 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         (quad.material as THREE.Material).dispose();
         dustGeo.dispose();
         dustMat.dispose();
-        sets.forEach((set) =>
-          set.forEach(({ tex, dep }) => {
-            tex.dispose();
-            dep.dispose();
-          }),
-        );
+        cache.forEach(({ tex, dep }) => {
+          tex.dispose();
+          dep.dispose();
+        });
         renderer.dispose();
       };
     };
@@ -525,7 +538,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         {shots.map((s, i) => (
           <img
             key={`${s.plate}-${i}`}
-            src={phoneSrc(plateSrc(s.plate, mode))}
+            src={phoneOf(plateSrc(s.plate, mode))}
             alt=""
             loading={i < 2 ? "eager" : "lazy"}
             style={{ opacity: i === 0 ? 1 : 0, objectPosition: `${50 + (s.focus?.[0] ?? 0) * 60}% 50%` }}
