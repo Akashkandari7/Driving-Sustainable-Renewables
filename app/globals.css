@@ -903,7 +903,7 @@ main {
     align-content: start;
   }
 
-  .scene--contact { padding-top: 36svh; }
+  .scene--contact { padding-top: 30svh; }
 
   h1 { font-size: clamp(2rem, 8.8vw, 2.6rem); line-height: 1.08; margin-bottom: 16px; }
   h2 { font-size: clamp(1.7rem, 7.6vw, 2.2rem); line-height: 1.12; margin-bottom: 14px; }
@@ -959,7 +959,9 @@ main {
   .card--b .card__inner {
     transform: none;
     display: grid;
-    grid-template-columns: auto 1fr;
+    /* max-content keeps the figure's own width; a plain auto column was being squeezed by a long
+       label and the gradient-filled text was clipping mid-digit */
+    grid-template-columns: max-content minmax(0, 1fr);
     align-items: center;
     column-gap: 16px;
     padding: 14px 18px;
@@ -969,7 +971,9 @@ main {
   .card__value {
     grid-row: 1 / span 2;
     margin: 0;
-    font-size: 1.85rem;
+    font-size: 1.75rem;
+    min-width: max-content;
+    white-space: nowrap;
   }
 
   .card__label {

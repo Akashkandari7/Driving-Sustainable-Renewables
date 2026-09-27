@@ -213,7 +213,7 @@ export default function ParticleScene() {
         const dark = theme === "dark";
         uniforms.uDark.value = dark ? 1 : 0;
         uniforms.uOpacity.value = dark ? (mobile ? 0.9 : 1) : mobile ? 0.85 : 1;
-        uniforms.uSize.value = mobile ? 34 : dark ? 38 : 40;
+        uniforms.uSize.value = mobile ? 30 : dark ? 38 : 40;
         // less per-particle flicker in light, where it reads as dirt rather than sparkle
         uniforms.uTwinkle.value = dark ? 0.4 : 0.12;
         material.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
@@ -231,9 +231,9 @@ export default function ParticleScene() {
 
       // Where the shape sits for each scene: opposite the text on desktop, above it on mobile.
       const offsets = scenes.map((s) =>
-        mobile ? { x: 0, y: 2.25 } : { x: s.side === "left" ? 2.5 : -2.5, y: 0.25 },
+        mobile ? { x: 0, y: 2.1 } : { x: s.side === "left" ? 2.5 : -2.5, y: 0.25 },
       );
-      group.scale.setScalar(mobile ? 0.5 : 1);
+      group.scale.setScalar(mobile ? 0.38 : 1);
 
       const resize = () => {
         const w = window.innerWidth, h = window.innerHeight;
