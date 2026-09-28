@@ -32,27 +32,28 @@ export type ModelName =
   | "pallet"
   | "tester";
 
-/** Breathing room left around each object once it is fitted, as a multiple of its radius.
-    The fit is to the bounding sphere, which is the worst case for a shape that is not round —
-    so these sit close to 1, or a flat subject like the drawings ends up marooned in its frame.
-    Only the long, thin ones get a little more. */
+/** Breathing room left around each object, as a multiple of what it sweeps as it turns.
+    Worked back from the module's own dimensions: at 1 it stands about a third larger than it
+    used to and runs into the spec card, and by 1.4 it is smaller than it ever was. These sit
+    just above 1.2, which reads a little larger than before with air still around it. The
+    long, thin subjects gain much more than that from the cylinder fit on their own. */
 const MARGIN: Record<ModelName, number> = {
-  module: 1.0,
-  rack: 1.0,
-  container: 1.04,
-  inverter: 1.0,
-  wafer: 0.98,
-  crate: 1.02,
-  tracker: 1.06,
-  bench: 0.96,
-  transformer: 1.0,
-  report: 0.98,
-  combiner: 1.0,
-  cell: 0.98,
-  weather: 1.06,
-  thermal: 0.98,
-  pallet: 1.0,
-  tester: 0.96,
+  module: 1.26,
+  rack: 1.2,
+  container: 1.2,
+  inverter: 1.2,
+  wafer: 1.18,
+  crate: 1.2,
+  tracker: 1.22,
+  bench: 1.16,
+  transformer: 1.2,
+  report: 1.16,
+  combiner: 1.2,
+  cell: 1.18,
+  weather: 1.22,
+  thermal: 1.18,
+  pallet: 1.18,
+  tester: 1.16,
 };
 
 /** The shape of the box each subject stands in, as width over height. A mast in a landscape
@@ -81,7 +82,10 @@ const FRAME: Record<ModelName, number> = {
    seven objects. So the scenes are pooled. The rule that matters: a subject the visitor can
    actually see is never retired to make room for another one — only the ones off screen are,
    and a host that is still wanted is rebuilt as soon as room frees up. */
-const LIVE_LIMIT = 4;
+/* A desktop browser copes with well over a dozen WebGL contexts, and an idle one costs
+   memory rather than frames. So on a wide screen every subject on the page gets to keep its
+   scene, which is what makes reaching one instant; a phone keeps a handful. */
+const liveLimit = () => (typeof window !== "undefined" && window.innerWidth >= 900 ? 10 : 3);
 
 type Host = {
   el: HTMLElement;
@@ -93,6 +97,12 @@ type Host = {
 };
 
 const hosts: Host[] = [];
+
+/* The room the objects reflect is the same for all of them, and assembling it is a couple of
+   dozen meshes and materials. It is built once and handed to each scene's prefilter, which is
+   the part that has to be done per renderer. */
+let room: THREE.Scene | null = null;
+const sharedRoom = () => (room ??= new RoomEnvironment());
 
 /** Pixels between the element and the viewport — zero while any part of it is on screen. */
 const gap = (el: HTMLElement) => {
@@ -119,6 +129,7 @@ const warm = async () => {
       // A mesh that cannot be prefetched is simply loaded the slow way later.
     }
   }
+  schedule();
 };
 
 const prefetch = (url: string) => {
@@ -132,10 +143,29 @@ const prefetch = (url: string) => {
 
 let scrolling = false;
 
+const idleRun = (fn: () => void) => {
+  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  if (idle) idle(fn);
+  else window.setTimeout(fn, 200);
+};
+
+/* Once the ones in view are up, the rest are built quietly in the background, nearest first
+   and one per idle moment, so that scrolling to a subject never starts a build. */
+const topUp = () => {
+  if (scrolling) return;
+  if (hosts.filter((h) => h.live).length >= liveLimit()) return;
+  const next = hosts.filter((h) => !h.live).sort((a, b) => gap(a.el) - gap(b.el))[0];
+  if (!next) return;
+  next.open();
+  next.live = true;
+  idleRun(topUp);
+};
+
 const schedule = () => {
-  // Anything that has scrolled well away goes first.
+  // Only what is a long way off is given up; anything near stays built.
+  const far = window.innerHeight * 5;
   hosts.forEach((h) => {
-    if (h.live && !h.wanted) {
+    if (h.live && !h.wanted && gap(h.el) > far) {
       h.close();
       h.live = false;
     }
@@ -147,7 +177,7 @@ const schedule = () => {
   for (const h of pending) {
     // Never start a build while the page is moving.
     if (scrolling) break;
-    if (count >= LIVE_LIMIT) {
+    if (count >= liveLimit()) {
       const furthest = hosts.filter((x) => x.live).sort((a, b) => gap(b.el) - gap(a.el))[0];
       // Only give up a scene that is further away than the one asking for room. Two subjects
       // both on screen are both at zero, so neither can evict the other.
@@ -160,6 +190,8 @@ const schedule = () => {
     h.live = true;
     count += 1;
   }
+
+  idleRun(topUp);
 };
 
 // The observers only fire as an element crosses the margin, which is not enough on its own:
@@ -175,7 +207,7 @@ if (typeof window !== "undefined") {
       settleAll = window.setTimeout(() => {
         scrolling = false;
         schedule();
-      }, 180);
+      }, 90);
     },
     { passive: true },
   );
@@ -228,7 +260,7 @@ export default function BrewModel({
       // A bright neutral room is what the metal and glass actually reflect. Turned up well
       // past the default so the objects read as new equipment under work lights.
       const pmrem = new THREE.PMREMGenerator(renderer);
-      const env = pmrem.fromScene(new RoomEnvironment(), 0.02);
+      const env = pmrem.fromScene(sharedRoom(), 0.02);
       scene.environment = env.texture;
       scene.environmentIntensity = 1.5;
 
