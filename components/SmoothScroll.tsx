@@ -8,7 +8,7 @@ import Lenis from "lenis";
  * is eased into position instead of jumping. Touch keeps the platform's own inertia, and anyone who
  * asks for reduced motion gets plain native scrolling.
  */
-export default function SmoothScroll() {
+export default function SmoothScroll({ wheelMultiplier = 0.95 }: { wheelMultiplier?: number }) {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -17,7 +17,7 @@ export default function SmoothScroll() {
       easing: (t: number) => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
       syncTouch: false,
-      wheelMultiplier: 0.95,
+      wheelMultiplier,
     });
 
     let raf = 0;
@@ -43,7 +43,7 @@ export default function SmoothScroll() {
       document.removeEventListener("click", onClick);
       lenis.destroy();
     };
-  }, []);
+  }, [wheelMultiplier]);
 
   return null;
 }

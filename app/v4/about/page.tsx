@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BrewNav from "@/components/BrewNav";
 import BrewReveal from "@/components/BrewReveal";
-import { asset } from "@/lib/asset";
+import BrewSubject from "@/components/BrewSubject";
+import BrewModel from "@/components/BrewModel";
 import { about } from "@/lib/dsr";
 
 export const metadata: Metadata = {
@@ -19,20 +20,29 @@ export default function BrewAbout() {
       <BrewReveal />
 
       <main>
-        <section className="brew-top reveal">
+        <section className="brew-top brew-top--withobject reveal">
           <div className="brew-hero__glow" aria-hidden="true" />
-          <p className="brew-eyebrow">// {hero.eyebrow}</p>
-          <h1 className="brew-head">
-            Built for the next
-            <br />
-            generation of <em>renewables</em>
-          </h1>
-          <p className="brew-top__lead">{hero.note}</p>
+          <div>
+            <p className="brew-eyebrow">// {hero.eyebrow}</p>
+            <h1 className="brew-head">
+              Built for the next
+              <br />
+              generation of <em>renewables</em>
+            </h1>
+            <p className="brew-top__lead">{hero.note}</p>
+          </div>
+          <figure className="is-subject brew-top__object">
+            <BrewModel name="pallet" label="Solar modules stacked on a pallet">
+              <BrewSubject name="crate" label="" />
+            </BrewModel>
+          </figure>
         </section>
 
         <section className="brew-split reveal">
-          <figure>
-            <img src={asset("/images/dusk/dusk-office-w.jpg")} alt="The DSR office in the evening" />
+          <figure className="is-subject">
+            <BrewModel name="bench" label="Site equipment: a hard hat, rolled drawings and a caliper">
+              <BrewSubject name="bench" label="" />
+            </BrewModel>
           </figure>
           <div>
             <p className="brew-eyebrow">// Who we are</p>
@@ -60,18 +70,25 @@ export default function BrewAbout() {
           </div>
         </section>
 
-        <section className="brew-block reveal">
-          <p className="brew-eyebrow">// {vision.eyebrow}</p>
-          <h2 className="brew-head">
-            Decisions driven by
-            <br />
-            <em>evidence</em>, not assumptions
-          </h2>
-          <ul className="brew-ticks">
-            {vision.points.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
+        <section className="brew-split brew-split--flip reveal">
+          <div>
+            <p className="brew-eyebrow">// {vision.eyebrow}</p>
+            <h2 className="brew-head">
+              Decisions driven by
+              <br />
+              <em>evidence</em>, not assumptions
+            </h2>
+            <ul className="brew-ticks">
+              {vision.points.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          </div>
+          <figure className="is-subject">
+            <BrewModel name="thermal" label="A thermal imaging camera used on inspections">
+              <BrewSubject name="dashboard" label="" />
+            </BrewModel>
+          </figure>
         </section>
 
         <section className="brew-block reveal">

@@ -2,7 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BrewNav from "@/components/BrewNav";
 import BrewReveal from "@/components/BrewReveal";
-import { asset } from "@/lib/asset";
+import BrewSubject, { SERVICE_SUBJECTS } from "@/components/BrewSubject";
+import BrewModel, { type ModelName } from "@/components/BrewModel";
+
+/* One object per service, in the order the services are listed. */
+const SERVICE_MODELS: ModelName[] = [
+  "transformer",
+  "crate",
+  "wafer",
+  "tracker",
+  "inverter",
+  "container",
+  "report",
+];
 import { services, servicesIntro } from "@/lib/dsr";
 
 export const metadata: Metadata = {
@@ -10,15 +22,6 @@ export const metadata: Metadata = {
   description: servicesIntro.body,
 };
 
-const PLATES = [
-  "/images/dusk/dusk-layout-bonnet-w.jpg",
-  "/images/dusk/dusk-crates-w.jpg",
-  "/images/dusk/dusk-cell-inspect-w.jpg",
-  "/images/dusk/dusk-construction-w.jpg",
-  "/images/dusk/dusk-switchgear-w.jpg",
-  "/images/dusk/dusk-bess-interior-w.jpg",
-  "/images/dusk/dusk-meeting-w.jpg",
-];
 
 export default function BrewServices() {
   return (
@@ -27,15 +30,22 @@ export default function BrewServices() {
       <BrewReveal />
 
       <main>
-        <section className="brew-top reveal">
+        <section className="brew-top brew-top--withobject reveal">
           <div className="brew-hero__glow" aria-hidden="true" />
-          <p className="brew-eyebrow">// {servicesIntro.eyebrow}</p>
-          <h1 className="brew-head">
-            Engineering. Quality.
-            <br />
-            <em>Execution</em>
-          </h1>
-          <p className="brew-top__lead">{servicesIntro.body}</p>
+          <div>
+            <p className="brew-eyebrow">// {servicesIntro.eyebrow}</p>
+            <h1 className="brew-head">
+              Engineering. Quality.
+              <br />
+              <em>Execution</em>
+            </h1>
+            <p className="brew-top__lead">{servicesIntro.body}</p>
+          </div>
+          <figure className="is-subject brew-top__object">
+            <BrewModel name="tester" label="Electrical test instruments">
+              <BrewSubject name="dashboard" label="" />
+            </BrewModel>
+          </figure>
         </section>
 
         {services.map((s, i) => (
@@ -46,8 +56,10 @@ export default function BrewServices() {
               <p className="brew-service__tag">{s.tagline}</p>
               {s.body && <p className="brew-service__body">{s.body}</p>}
               {s.closing && <p className="brew-service__note">{s.closing}</p>}
-              <figure>
-                <img src={asset(PLATES[i % PLATES.length])} alt="" />
+              <figure className="is-subject">
+                <BrewModel name={SERVICE_MODELS[i % SERVICE_MODELS.length]} label={s.name}>
+                  <BrewSubject name={SERVICE_SUBJECTS[i % SERVICE_SUBJECTS.length]} label="" />
+                </BrewModel>
               </figure>
             </div>
             <div className="brew-service__groups">

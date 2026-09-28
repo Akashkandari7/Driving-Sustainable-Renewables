@@ -3,7 +3,8 @@ import Link from "next/link";
 import BrewNav from "@/components/BrewNav";
 import BrewReveal from "@/components/BrewReveal";
 import { home, services } from "@/lib/dsr";
-import { asset } from "@/lib/asset";
+import BrewSubject from "@/components/BrewSubject";
+import BrewModel from "@/components/BrewModel";
 
 export const metadata: Metadata = {
   title: "DSR — Independent Quality, Engineering & Advisory for Solar and Storage",
@@ -12,9 +13,9 @@ export const metadata: Metadata = {
 
 /* The hero subject, with the callouts that sit around it. */
 const CALLOUTS = [
-  { x: 14, y: 26, label: "Factory audit", note: "Capability, process, quality system" },
-  { x: 66, y: 46, label: "Pre-shipment", note: "Visual, dimensional, EL witnessing" },
-  { x: 24, y: 74, label: "BOM verification", note: "What was specified is what is built" },
+  { x: 1, y: 11, label: "Factory audit", note: "Capability, process, quality system" },
+  { x: 60, y: 82, label: "Pre-shipment", note: "Visual, dimensional, EL witnessing" },
+  { x: 0, y: 88, label: "BOM verification", note: "What was specified is what is built" },
 ];
 
 const TICKER = [
@@ -56,7 +57,9 @@ export default function BrewHome() {
           </div>
 
           <figure className="brew-hero__subject reveal">
-            <img src={asset("/images/dusk/dusk-cell-inspect-w.jpg")} alt="A photovoltaic cell string under inspection light" />
+            <BrewModel name="module" label="A framed photovoltaic module">
+              <BrewSubject name="module" label="" />
+            </BrewModel>
             {CALLOUTS.map((c) => (
               <span key={c.label} className="brew-callout" style={{ left: `${c.x}%`, top: `${c.y}%` }}>
                 <i aria-hidden="true" />
@@ -110,8 +113,10 @@ export default function BrewHome() {
         </section>
 
         <section className="brew-split reveal">
-          <figure>
-            <img src={asset("/images/dusk/dusk-bess-interior-w.jpg")} alt="Battery racks inside a storage container" />
+          <figure className="is-subject">
+            <BrewModel name="rack" label="A battery rack, each tray reporting its own state">
+              <BrewSubject name="rack" label="" />
+            </BrewModel>
           </figure>
           <div>
             <p className="brew-eyebrow">// {whatWeDo.eyebrow}</p>
@@ -132,21 +137,28 @@ export default function BrewHome() {
           </div>
         </section>
 
-        <section className="brew-block reveal">
-          <p className="brew-eyebrow">// {why.eyebrow}</p>
-          <h2 className="brew-head">
-            Independent. Technical.
-            <br />
-            <em>Evidence-based</em>
-          </h2>
-          <div className="brew-grid">
-            {why.pillars.map((p) => (
-              <article key={p.name}>
-                <h3>{p.name}</h3>
-                <p>{p.body}</p>
-              </article>
-            ))}
+        <section className="brew-split brew-split--flip reveal">
+          <div>
+            <p className="brew-eyebrow">// {why.eyebrow}</p>
+            <h2 className="brew-head">
+              Independent. Technical.
+              <br />
+              <em>Evidence-based</em>
+            </h2>
+            <div className="brew-grid brew-grid--tight">
+              {why.pillars.map((p) => (
+                <article key={p.name}>
+                  <h3>{p.name}</h3>
+                  <p>{p.body}</p>
+                </article>
+              ))}
+            </div>
           </div>
+          <figure className="is-subject">
+            <BrewModel name="cell" label="A prismatic lithium-ion battery cell">
+              <BrewSubject name="wafer" label="" />
+            </BrewModel>
+          </figure>
         </section>
 
         <section className="brew-block brew-block--tight reveal">
@@ -164,7 +176,12 @@ export default function BrewHome() {
           </ol>
         </section>
 
-        <section className="brew-block reveal">
+        <section className="brew-block reveal brew-block--withobject">
+          <figure className="is-subject brew-block__object">
+            <BrewModel name="weather" label="A plant weather monitoring station">
+              <BrewSubject name="plan" label="" />
+            </BrewModel>
+          </figure>
           <p className="brew-eyebrow">// {sectors.eyebrow}</p>
           <div className="brew-sectors">
             {sectors.items.map((s) => (

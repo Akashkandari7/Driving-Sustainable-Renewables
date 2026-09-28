@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { asset } from "@/lib/asset";
 
 const links = [
@@ -16,9 +16,18 @@ const links = [
 export default function BrewNav() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [solid, setSolid] = useState(false);
+
+  // The bar turns solid as soon as anything starts passing behind it.
+  useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className={`brew-nav${open ? " is-open" : ""}`}>
+    <header className={`brew-nav${open ? " is-open" : ""}${solid ? " is-solid" : ""}`}>
       <nav aria-label="Main">
         {links.map((l) => (
           <Link key={l.href} href={l.href} aria-current={path === l.href ? "page" : undefined} onClick={() => setOpen(false)}>

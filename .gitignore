@@ -15,3 +15,6 @@ AGENTS.md
 
 # static export output
 out/
+
+# The meshes as they came from the generator — only the optimised copies are published.
+/.raw-models/

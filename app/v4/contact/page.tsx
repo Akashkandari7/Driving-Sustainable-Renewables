@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import BrewNav from "@/components/BrewNav";
 import BrewReveal from "@/components/BrewReveal";
 import ContactForm from "@/components/ContactForm";
+import BrewModel from "@/components/BrewModel";
+import BrewSubject from "@/components/BrewSubject";
 import { contact } from "@/lib/dsr";
 
 export const metadata: Metadata = {
@@ -48,6 +50,11 @@ export default function BrewContact() {
           </div>
           <div className="brew-contact__form">
             <ContactForm />
+            <figure className="is-subject brew-contact__object">
+              <BrewModel name="combiner" label="A string combiner box">
+                <BrewSubject name="inverter" label="" />
+              </BrewModel>
+            </figure>
           </div>
         </section>
       </main>

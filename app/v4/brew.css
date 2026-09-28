@@ -2,12 +2,13 @@
    Scoped under .brew so the other versions are untouched. */
 
 .brew {
-  --ink: #f4f1ec;
-  --soft: rgba(244, 241, 236, 0.66);
-  --dim: rgba(244, 241, 236, 0.4);
-  --hair: rgba(244, 241, 236, 0.14);
-  --bg: #0b0a09;
-  --glow: rgba(196, 118, 46, 0.4);
+  --ink: #eef2f6;
+  --soft: rgba(238, 242, 246, 0.66);
+  --dim: rgba(238, 242, 246, 0.4);
+  --hair: rgba(238, 242, 246, 0.14);
+  --bg: #080b0e;
+  /* sunlight, not lamplight */
+  --glow: rgba(255, 168, 56, 0.34);
   --green: #4ade80;
   --pad: clamp(18px, 4vw, 56px);
   --mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
@@ -67,7 +68,15 @@
   align-items: center;
   gap: 20px;
   padding: 20px var(--pad);
-  background: linear-gradient(rgba(11, 10, 9, 0.9), rgba(11, 10, 9, 0));
+  background: linear-gradient(rgba(8, 11, 14, 0.92), rgba(8, 11, 14, 0));
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease;
+  border-bottom: 1px solid transparent;
+}
+
+/* Once content starts passing behind it the bar goes solid, so nothing reads through it. */
+.brew-nav.is-solid {
+  background: #0a0e12;
+  border-bottom-color: var(--hair);
 }
 
 .brew-nav nav {
@@ -136,7 +145,7 @@
 .brew-hero {
   position: relative;
   min-height: 100svh;
-  padding: 22vh var(--pad) 90px;
+  padding: 17vh var(--pad) 90px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   align-items: center;
@@ -149,9 +158,14 @@
   position: absolute;
   inset: 0;
   z-index: -1;
+  transform: translateZ(0);
+  will-change: transform;
   background:
-    radial-gradient(46% 52% at 62% 46%, var(--glow), transparent 68%),
-    radial-gradient(70% 60% at 50% 120%, rgba(255, 255, 255, 0.05), transparent 70%);
+    /* a tight pool of sun under the subject rather than a wash across the whole section */
+    radial-gradient(32% 34% at 64% 58%, var(--glow), transparent 72%),
+    /* a cool wash from above, so the stage does not read as one brown haze */
+    radial-gradient(60% 40% at 40% -10%, rgba(150, 190, 230, 0.07), transparent 70%),
+    radial-gradient(70% 55% at 50% 120%, rgba(255, 255, 255, 0.04), transparent 72%);
   pointer-events: none;
 }
 
@@ -230,7 +244,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--soft);
-  max-width: 190px;
+  max-width: 172px;
   opacity: 0;
   transform: translateX(-8px);
   transition: opacity 0.9s ease 0.5s, transform 0.9s ease 0.5s;
@@ -529,7 +543,7 @@
 }
 
 .brew-index a:hover {
-  background: rgba(244, 241, 236, 0.04);
+  background: rgba(238, 242, 246, 0.04);
   padding-left: 14px;
 }
 
@@ -595,14 +609,14 @@
   margin: 0;
 }
 
-.brew-btn {
+.brew .brew-btn {
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 18px 34px;
   border-radius: 999px;
   background: var(--ink);
-  color: #0b0a09;
+  color: #080b0e;
   font-family: var(--mono);
   font-size: 11.5px;
   letter-spacing: 0.16em;
@@ -611,7 +625,7 @@
   transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
 
-.brew-btn:hover {
+.brew .brew-btn:hover {
   transform: translateY(-2px);
   background: var(--green);
   color: #06220f;
@@ -635,7 +649,7 @@
 @media (max-width: 1100px) {
   .brew-hero {
     grid-template-columns: 1fr;
-    padding-top: 18vh;
+    padding-top: 15vh;
   }
 
   .brew-spec {
@@ -724,8 +738,29 @@
 
 .brew-top {
   position: relative;
-  padding: 26vh var(--pad) clamp(60px, 9vw, 110px);
+  padding: 21vh var(--pad) clamp(60px, 9vw, 110px);
   isolation: isolate;
+}
+
+/* A page opening that carries its own object: the copy holds the left, the subject the
+   right, instead of leaving half the screen to the glow. */
+.brew-top--withobject {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(30px, 5vw, 70px);
+  padding-top: 18vh;
+}
+
+.brew-top__object {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .brew-top--withobject {
+    grid-template-columns: 1fr;
+    padding-top: 15vh;
+  }
 }
 
 .brew-top__lead {
@@ -937,7 +972,7 @@
 .brew-contact__form .form input,
 .brew-contact__form .form select,
 .brew-contact__form .form textarea {
-  background: rgba(244, 241, 236, 0.04);
+  background: rgba(238, 242, 246, 0.04);
   border: 1px solid var(--hair);
   border-radius: 2px;
   color: var(--ink);
@@ -945,7 +980,7 @@
 
 .brew-contact__form .form input::placeholder,
 .brew-contact__form .form textarea::placeholder {
-  color: rgba(244, 241, 236, 0.32);
+  color: rgba(238, 242, 246, 0.32);
 }
 
 .brew-contact__form .form select option {
@@ -957,13 +992,13 @@
 .brew-contact__form .form select:focus,
 .brew-contact__form .form textarea:focus {
   border-color: var(--green);
-  background: rgba(244, 241, 236, 0.07);
+  background: rgba(238, 242, 246, 0.07);
   box-shadow: none;
 }
 
 .brew-contact__form .btn--primary {
   background: var(--ink);
-  color: #0b0a09;
+  color: #080b0e;
   border-radius: 999px;
   box-shadow: none;
   font-family: var(--mono);
@@ -982,5 +1017,213 @@
   .brew-service,
   .brew-contact {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- drawn subjects ---------- */
+
+/* Each subject is an SVG object on the stage rather than a photograph, so it sizes to its own
+   drawing instead of being cropped into a box. */
+.brew-subject {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  transform-origin: 52% 62%;
+  /* Drawn once onto its own layer, so the swing below moves a finished bitmap rather than
+     re-rasterising a few hundred vector paths on every frame. */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  /* the object swings into place as its section arrives — the 3D move the client asked for */
+  transform: perspective(1400px) rotateY(-17deg) rotateX(7deg) translate3d(0, 20px, -60px);
+  opacity: 0;
+  transition: transform 1.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.9s ease;
+}
+
+.reveal.in .brew-subject {
+  transform: none;
+  opacity: 1;
+}
+
+/* a figure holding a subject is sized by the drawing, not by a fixed crop */
+.brew figure.is-subject,
+.brew-hero__subject:has(.brew-subject) {
+  aspect-ratio: auto;
+}
+
+.brew-service figure.is-subject {
+  margin-top: 24px;
+}
+
+/* the warm pool each subject stands in, so it reads as lit rather than pasted on */
+.brew figure.is-subject,
+.brew-hero__subject {
+  position: relative;
+}
+
+/* Containment keeps a drawn subject's painting to itself. It is deliberately not applied to
+   a figure holding a turnable model, which needs to paint outside its box as it rotates. */
+.brew figure.is-subject:not(:has(.brew-model)) {
+  contain: layout paint style;
+}
+
+.brew figure.is-subject::before {
+  content: "";
+  position: absolute;
+  inset: 6% 0 -4%;
+  z-index: -1;
+  background: radial-gradient(50% 44% at 54% 58%, rgba(255, 168, 56, 0.2), transparent 72%);
+  pointer-events: none;
+  /* the pool is painted with the figure, so scrolling never repaints the section behind it */
+  contain: paint;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brew-subject {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}
+
+/* ---------- the turnable subjects ---------- */
+
+/* A GLB standing on the stage. The canvas fills the figure; the object inside is framed by
+   the viewer, so the box only has to give it a sensible shape to sit in. */
+.brew-model {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+/* The drawn subject is the stand-in for a browser that cannot show the model at all. While a
+   model is on its way the stage simply stays empty, because swapping a drawing for a mesh
+   that sits at a different angle reads as a jolt. */
+.brew-model__still {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+}
+
+.brew-model.is-failed .brew-model__still {
+  display: grid;
+}
+
+.brew-model__still .brew-subject {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  will-change: auto;
+}
+
+.brew-model__canvas {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.brew-model.is-ready .brew-model__canvas {
+  opacity: 1;
+}
+
+.brew-model:active {
+  cursor: grabbing;
+}
+
+.brew-model__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the pool of light the object stands in */
+.brew-model::before {
+  content: "";
+  position: absolute;
+  inset: 8% 0 -2%;
+  z-index: -1;
+  background: radial-gradient(50% 44% at 52% 56%, rgba(255, 168, 56, 0.24), transparent 72%);
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+/* Says the object can be turned, then gets out of the way once it has been. */
+.brew-model__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.brew-model.is-ready .brew-model__hint {
+  opacity: 1;
+}
+
+.brew-model:active .brew-model__hint {
+  opacity: 0;
+}
+
+/* Until the mesh has arrived — or if WebGL is unavailable — the stage stays quiet rather
+   than showing an empty box. */
+.brew-model.is-failed {
+  cursor: default;
+}
+
+.brew-hero__subject .brew-model {
+  aspect-ratio: 5 / 4;
+}
+
+@media (max-width: 780px) {
+  .brew-model {
+    aspect-ratio: 1 / 1;
+  }
+
+  .brew-model__hint {
+    font-size: 9px;
+  }
+}
+
+/* the picture side of a split, moved after the copy */
+.brew-split--flip figure {
+  order: 2;
+}
+
+.brew-grid--tight {
+  margin-top: 26px;
+}
+
+/* a block that carries an object above its copy */
+.brew-block--withobject {
+  position: relative;
+}
+
+.brew-block__object {
+  max-width: 420px;
+  margin: 0 0 12px;
+}
+
+.brew-contact__object {
+  margin: 34px 0 0;
+  max-width: 360px;
+}
+
+@media (max-width: 900px) {
+  .brew-split--flip figure {
+    order: 0;
+  }
+
+  .brew-block__object,
+  .brew-contact__object {
+    max-width: 100%;
   }
 }
