@@ -53,35 +53,73 @@ const MARGIN: Record<ModelName, number> = {
   tester: 1.12,
 };
 
-/* A browser only tolerates a handful of WebGL contexts before it starts dropping the oldest
-   ones itself, and a services page carries seven objects. So the scenes are pooled: at most
-   two exist at a time, and the one furthest from the viewport is retired to make room. */
-const LIVE_LIMIT = 2;
-type Live = { el: HTMLElement; close: () => void };
-const live: Live[] = [];
+/* A browser only tolerates a handful of WebGL contexts at once, and the services page carries
+   seven objects. So the scenes are pooled. The rule that matters: a subject the visitor can
+   actually see is never retired to make room for another one — only the ones off screen are,
+   and a host that is still wanted is rebuilt as soon as room frees up. */
+const LIVE_LIMIT = 4;
 
-const distance = (el: HTMLElement) => {
-  const r = el.getBoundingClientRect();
-  return Math.abs(r.top + r.height / 2 - window.innerHeight / 2);
+type Host = {
+  el: HTMLElement;
+  /** near enough that it ought to be showing */
+  wanted: boolean;
+  live: boolean;
+  open: () => void;
+  close: () => void;
 };
 
-const makeRoom = (keep: HTMLElement) => {
-  while (live.length >= LIVE_LIMIT) {
-    let worst = -1;
-    let worstAt = -1;
-    live.forEach((l, i) => {
-      if (l.el === keep) return;
-      const d = distance(l.el);
-      if (d > worst) {
-        worst = d;
-        worstAt = i;
-      }
-    });
-    if (worstAt < 0) return;
-    const [gone] = live.splice(worstAt, 1);
-    gone.close();
+const hosts: Host[] = [];
+
+/** Pixels between the element and the viewport — zero while any part of it is on screen. */
+const gap = (el: HTMLElement) => {
+  const r = el.getBoundingClientRect();
+  const h = window.innerHeight;
+  if (r.bottom > 0 && r.top < h) return 0;
+  return r.top >= h ? r.top - h : -r.bottom;
+};
+
+const schedule = () => {
+  // Anything that has scrolled well away goes first.
+  hosts.forEach((h) => {
+    if (h.live && !h.wanted) {
+      h.close();
+      h.live = false;
+    }
+  });
+
+  let count = hosts.filter((h) => h.live).length;
+  const pending = hosts.filter((h) => h.wanted && !h.live).sort((a, b) => gap(a.el) - gap(b.el));
+
+  for (const h of pending) {
+    if (count >= LIVE_LIMIT) {
+      const furthest = hosts.filter((x) => x.live).sort((a, b) => gap(b.el) - gap(a.el))[0];
+      // Only give up a scene that is further away than the one asking for room. Two subjects
+      // both on screen are both at zero, so neither can evict the other.
+      if (!furthest || gap(furthest.el) <= gap(h.el)) break;
+      furthest.close();
+      furthest.live = false;
+      count -= 1;
+    }
+    h.open();
+    h.live = true;
+    count += 1;
   }
 };
+
+// The observers only fire as an element crosses the margin, which is not enough on its own:
+// a host retired under pressure never crosses anything again. Re-running the scheduler once
+// the scroll settles is what brings those back.
+if (typeof window !== "undefined") {
+  let settleAll = 0;
+  window.addEventListener(
+    "scroll",
+    () => {
+      clearTimeout(settleAll);
+      settleAll = window.setTimeout(schedule, 160);
+    },
+    { passive: true },
+  );
+}
 
 export default function BrewModel({
   name,
@@ -112,7 +150,6 @@ export default function BrewModel({
 
     const build = () => {
       if (teardown) return;
-      makeRoom(el);
       setState("loading");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -314,25 +351,24 @@ export default function BrewModel({
         setState("idle");
       };
 
-      teardown = () => {
-        const at = live.findIndex((l) => l.el === el);
-        if (at >= 0) live.splice(at, 1);
-        close();
-      };
-      live.push({ el, close: () => {
-        close();
-        teardown = null;
-      } });
+      teardown = close;
     };
 
-    // Build a little before the section arrives, and let it go once it is far behind.
+    const shut = () => {
+      if (!teardown) return;
+      const go = teardown;
+      teardown = null;
+      go();
+    };
+
+    const entry: Host = { el, wanted: false, live: false, open: build, close: shut };
+    hosts.push(entry);
+
+    // Wanted a little before the section arrives; the scheduler works out what can be built.
     const near = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) build();
-        else if (teardown && Math.abs(e.boundingClientRect.top) > window.innerHeight * 1.6) {
-          teardown();
-          teardown = null;
-        }
+        entry.wanted = e.isIntersecting;
+        schedule();
       },
       { rootMargin: "60% 0px" },
     );
@@ -340,8 +376,9 @@ export default function BrewModel({
 
     return () => {
       near.disconnect();
-      teardown?.();
-      teardown = null;
+      const at = hosts.indexOf(entry);
+      if (at >= 0) hosts.splice(at, 1);
+      shut();
     };
   }, [name]);
 
