@@ -1630,3 +1630,11 @@
     display: block;
   }
 }
+
+/* The plate stack, the idle placeholder and the canvas all sit on a near-black ground, which
+   is right at dusk and wrong under a daylight page. */
+.cine[data-mode="dawn"] .cine__plates,
+.cine[data-mode="dawn"] .cine__canvas--idle,
+.cine[data-mode="dawn"] .cine__canvas {
+  background: #f3ece3;
+}

@@ -246,6 +246,12 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
       // hard edges for the extra pixels to sharpen.
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       renderer.setClearColor(0x05070b, 1);
+      // What shows wherever a plate does not reach — between shots, and at the edges as the
+      // camera pulls back. Near-black is invisible at dusk but reads as a black band across a
+      // daylight page, so it follows the mode along with everything else.
+      const duskClear = new THREE.Color(0x05070b);
+      const dawnClear = new THREE.Color(0xf3ece3);
+      const clear = new THREE.Color();
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
@@ -432,6 +438,7 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
         const plateB = plateFor(j, mode) ?? plateA;
 
         dawn += (dawnTarget - dawn) * 0.06;
+        renderer.setClearColor(clear.copy(duskClear).lerp(dawnClear, dawn), 1);
 
         /* The flight. Dusk falls forward — the plate you are on rushes past the camera. Dawn opens
            outward — the next scene comes up from further back and the light arrives with it. */
