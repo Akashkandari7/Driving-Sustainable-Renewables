@@ -1093,7 +1093,6 @@
 .brew-model {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
   touch-action: pan-y;
   cursor: grab;
 }
@@ -1179,23 +1178,7 @@
   cursor: default;
 }
 
-.brew-hero__subject .brew-model {
-  aspect-ratio: 5 / 4;
-}
-
-/* Beside a column of copy there is height to spare, so the object gets a squarer frame and
-   fills far more of it. */
-.brew-split figure .brew-model,
-.brew-sectors-split figure .brew-model,
-.brew-top__object .brew-model {
-  aspect-ratio: 1 / 1;
-}
-
 @media (max-width: 780px) {
-  .brew-model {
-    aspect-ratio: 1 / 1;
-  }
-
   .brew-model__hint {
     font-size: 9px;
   }

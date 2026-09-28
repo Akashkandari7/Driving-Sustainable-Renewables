@@ -55,11 +55,33 @@ const MARGIN: Record<ModelName, number> = {
   tester: 0.96,
 };
 
+/** The shape of the box each subject stands in, as width over height. A mast in a landscape
+    frame leaves the sides empty and a pallet in a square one leaves the top and bottom empty,
+    so the frame is cut to the object instead of the other way round. */
+const FRAME: Record<ModelName, number> = {
+  module: 0.82,
+  rack: 0.78,
+  container: 1.5,
+  inverter: 0.8,
+  wafer: 1.05,
+  crate: 1.2,
+  tracker: 1.15,
+  bench: 1.45,
+  transformer: 1.25,
+  report: 1.45,
+  combiner: 0.95,
+  cell: 0.75,
+  weather: 0.62,
+  thermal: 1.3,
+  pallet: 1.45,
+  tester: 1.5,
+};
+
 /* A browser only tolerates a handful of WebGL contexts at once, and the services page carries
    seven objects. So the scenes are pooled. The rule that matters: a subject the visitor can
    actually see is never retired to make room for another one — only the ones off screen are,
    and a host that is still wanted is rebuilt as soon as room frees up. */
-const LIVE_LIMIT = 3;
+const LIVE_LIMIT = 4;
 
 type Host = {
   el: HTMLElement;
@@ -78,6 +100,34 @@ const gap = (el: HTMLElement) => {
   const h = window.innerHeight;
   if (r.bottom > 0 && r.top < h) return 0;
   return r.top >= h ? r.top - h : -r.bottom;
+};
+
+/* Scenes are built one or two at a time, but the files they need can all be on their way
+   long before that. Each host puts its mesh in this queue on mount; once the page has gone
+   quiet they are fetched in the background, so by the time a subject is scrolled to, its
+   mesh is already in the browser's cache and the scene appears at once. */
+const queued = new Set<string>();
+let warming = false;
+
+const warm = async () => {
+  if (warming) return;
+  warming = true;
+  for (const url of queued) {
+    try {
+      await fetch(url, { priority: "low" } as RequestInit);
+    } catch {
+      // A mesh that cannot be prefetched is simply loaded the slow way later.
+    }
+  }
+};
+
+const prefetch = (url: string) => {
+  if (queued.has(url)) return;
+  queued.add(url);
+  if (typeof window === "undefined") return;
+  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  if (idle) idle(warm);
+  else window.setTimeout(warm, 1200);
 };
 
 let scrolling = false;
@@ -244,11 +294,14 @@ export default function BrewModel({
       // that fits a sphere of radius 1 in the narrower of the two fields of view. Fitting the
       // sphere rather than the box means no corner can swing out of frame while it turns.
       let fitted = false;
+      let spin = 1;
+      let rise = 1;
       const fit = () => {
         const vFov = (camera.fov * Math.PI) / 180;
         const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
-        const tight = Math.min(vFov, hFov);
-        const reach = (MARGIN[name] / Math.sin(tight / 2)) * 1.02;
+        // Across the frame the silhouette is a circle of the swept radius; up the frame it is
+        // just the object's own height. Whichever needs more room decides the distance.
+        const reach = Math.max(spin / Math.sin(hFov / 2), rise / Math.sin(vFov / 2)) * MARGIN[name];
         camera.position.setLength(reach);
         camera.near = Math.max(reach - 2.5, 0.05);
         camera.far = reach + 4;
@@ -278,15 +331,22 @@ export default function BrewModel({
           if (disposed) return;
           const object = gltf.scene;
 
-          // Centre it on the origin and scale it so its bounding sphere has radius 1,
-          // whatever size and offset it arrived in.
+          // Centre it on the origin, then measure the cylinder it sweeps as it turns rather
+          // than the sphere around it. The visitor can only spin it about the upright axis,
+          // so the sphere is far too generous for anything tall and thin — it pushed the
+          // camera back until a mast or a panel was a sliver in the middle of the frame.
           const box = new THREE.Box3().setFromObject(object);
-          const sphere = box.getBoundingSphere(new THREE.Sphere());
-          const unit = 1 / (sphere.radius || 1);
-          object.position.sub(sphere.center);
+          const mid = box.getCenter(new THREE.Vector3());
+          const half = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+          const unit = 1 / (Math.max(half.x, half.y, half.z) || 1);
+          object.position.sub(mid);
           object.scale.setScalar(unit);
           object.position.multiplyScalar(unit);
           root.add(object);
+
+          // radius it sweeps horizontally, and how far it reaches up and down
+          spin = Math.hypot(half.x, half.z) * unit;
+          rise = half.y * unit;
 
           // A three-quarter view to start from; fit() sets how far back that sits.
           camera.position.set(0.62, 0.42, 0.78);
@@ -371,6 +431,9 @@ export default function BrewModel({
       go();
     };
 
+    prefetch(asset("/draco/draco_decoder.wasm"));
+    prefetch(asset(`/models/${name}.glb`));
+
     const entry: Host = { el, wanted: false, live: false, open: build, close: shut };
     hosts.push(entry);
 
@@ -396,6 +459,7 @@ export default function BrewModel({
     <div
       ref={host}
       className={`brew-model is-${state}`}
+      style={{ aspectRatio: String(FRAME[name]) }}
       data-model={name}
       role="img"
       aria-label={`${label}. Drag to turn it.`}
