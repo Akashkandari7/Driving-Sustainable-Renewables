@@ -48,6 +48,7 @@ const vertexShader = /* glsl */ `
   varying float vRand;
   varying float vTwinkle;
   varying vec3 vLogoCol;
+  varying float vSpan;
 
   void main() {
     vec3 pos = position * uW[0] + p1 * uW[1] + p2 * uW[2] + p3 * uW[3] + p4 * uW[4] + p5 * uW[5];
@@ -57,6 +58,9 @@ const vertexShader = /* glsl */ `
     float c = cos(ang), s = sin(ang);
     pos.xz = mat2(c, -s, s, c) * pos.xz;
     pos += normalize(pos + 0.0001) * uTrans * (0.5 + aRand * 1.6);
+
+    // where the point lies across the body, so a colour can run through it end to end
+    vSpan = clamp(pos.x / 7.0 + 0.5, 0.0, 1.0);
 
     float t = uTime * 0.6 + aRand * 62.83;
     pos += vec3(sin(t), cos(t * 1.3), sin(t * 0.7)) * (0.012 + uTrans * 0.22);
@@ -80,15 +84,18 @@ const fragmentShader = /* glsl */ `
   uniform float uOpacity;
   uniform float uDark;
   uniform float uLogo;
+  uniform float uSpread;
   varying float vRand;
   varying float vTwinkle;
   varying vec3 vLogoCol;
+  varying float vSpan;
 
   void main() {
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
     float a = pow(1.0 - d * 2.0, 1.7);
-    vec3 base = mix(uColA, uColB, vRand);
+    // Either a colour scattered through the swarm, or one that runs across it end to end.
+    vec3 base = mix(uColA, uColB, mix(vRand, vSpan, uSpread));
     base = mix(base, vLogoCol, uLogo);
     // Dark: additive core blown out to white. Light: flat ink, so overlapping points stay clean.
     vec3 col = mix(base, base + pow(a, 5.0) * 0.55, uDark);
@@ -114,13 +121,22 @@ export default function ParticleScene({
   selector = "[data-scene]",
   theme: forced,
   field,
+  figures,
+  palette,
+  spread = false,
 }: {
   /** Which sections the field steps through. */
   selector?: string;
-  /** Hold the field on one side of the window instead of letting it alternate. The concept
-      it was written for puts its copy left and right by turns; the cinematic pages keep
-      their copy on the left throughout, so the figures belong on the right every time. */
-  field?: "left" | "right";
+  /** Hold the field in one place instead of letting it alternate. The concept it was written
+      for puts its copy left and right by turns, with the figure opposite; a page that stands
+      inside the swarm rather than beside it wants it centred. */
+  field?: "left" | "right" | "centre";
+  /** The forms to travel through, in order. Six of them, or the default set is used. */
+  figures?: ((count: number) => Float32Array)[];
+  /** A colour pair per form, overriding the theme's own. */
+  palette?: [string, string][];
+  /** Run the colour across the body rather than scattering it through the swarm. */
+  spread?: boolean;
   /** Follow this instead of the site-wide theme — the cinematic pages run their own
       dusk and dawn rather than the light and dark switch. */
   theme?: Theme;
@@ -171,7 +187,8 @@ export default function ParticleScene({
       }
       if (disposed) return renderer.dispose();
 
-      const shapes = [sun(N), solarPanel(N), battery(N), bolt(N), network(N), globe(N)];
+      const make = figures ?? [sun, solarPanel, battery, bolt, network, globe];
+      const shapes = make.map((f) => f(N));
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(shapes[0], 3));
       shapes.slice(1).forEach((s, i) => geometry.setAttribute(`p${i + 1}`, new THREE.BufferAttribute(s, 3)));
@@ -183,8 +200,8 @@ export default function ParticleScene({
       geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 60);
 
       const swatches: Record<Theme, THREE.Color[][]> = {
-        light: PALETTES.light.map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
-        dark: PALETTES.dark.map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
+        light: (palette ?? PALETTES.light).map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
+        dark: (palette ?? PALETTES.dark).map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
       };
       let theme = forced ?? currentTheme();
       let colors = swatches[theme];
@@ -198,6 +215,7 @@ export default function ParticleScene({
         uOpacity: { value: 1 },
         uDark: { value: 0 },
         uTwinkle: { value: 0.4 },
+        uSpread: { value: spread ? 1 : 0 },
         uLogo: { value: reduceMotion ? 0 : 1 },
         uColA: { value: colors[0][0].clone() },
         uColB: { value: colors[0][1].clone() },
@@ -258,6 +276,7 @@ export default function ParticleScene({
       // Where the shape sits for each scene: opposite the text on desktop, above it on mobile.
       const offsets = scenes.map((s) => {
         if (mobile) return { x: 0, y: 2.1 };
+        if (field === "centre") return { x: 0, y: 0 };
         if (field) return { x: field === "right" ? 3.1 : -3.1, y: 0.25 };
         return { x: s.side === "left" ? 2.5 : -2.5, y: 0.25 };
       });

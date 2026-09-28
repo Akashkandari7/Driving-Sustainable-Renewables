@@ -349,3 +349,92 @@ export function randoms(count: number, seed: number) {
   for (let i = 0; i < count; i++) out[i] = r();
   return out;
 }
+
+/* ---------------------------------------------------------------------------
+   The forms the home page travels through. Unlike the figures above, which are
+   objects seen from outside, these are places: the swarm is a body the visitor
+   moves into and through as the page scrolls.
+   --------------------------------------------------------------------------- */
+
+/** A sphere drawn as vertical strands, the way a wire globe reads. Fills the opening frame. */
+export function strandOrb(count: number) {
+  const r = mulberry32(101);
+  const out = new Float32Array(count * 3);
+  const R = 3.4;
+  const strands = 150;
+  for (let i = 0; i < count; i++) {
+    // Each point belongs to a meridian, so the surface reads as combed lines rather than noise.
+    const lon = (Math.floor(r() * strands) / strands) * Math.PI * 2;
+    const lat = Math.acos(1 - 2 * r());
+    const wob = 1 + Math.sin(lat * 7.0 + lon * 2.0) * 0.035 + gauss(r) * 0.012;
+    const rr = R * wob;
+    const sl = Math.sin(lat);
+    out.set([sl * Math.cos(lon) * rr, Math.cos(lat) * rr, sl * Math.sin(lon) * rr], i * 3);
+  }
+  return shuffle(out, r);
+}
+
+/** Rows of panels running away to the horizon — the plant seen from inside it. */
+export function panelField(count: number) {
+  const r = mulberry32(202);
+  const out = new Float32Array(count * 3);
+  const rows = 14;
+  const rowGap = 1.15;
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(r() * rows);
+    const z = -row * rowGap + 3.2;
+    // rows shrink with distance, the way a receding array does
+    const spread = 7.6 - row * 0.16;
+    const x = (r() - 0.5) * spread;
+    const k = r();
+    let y: number;
+    if (k < 0.72) {
+      // the tilted face of the panel
+      y = -1.15 + (r() - 0.2) * 0.9 + row * 0.055;
+    } else if (k < 0.88) {
+      // the gap of sky between rows reads as the busbar lines
+      y = -1.15 + row * 0.055 + 0.62 + gauss(r) * 0.02;
+    } else {
+      // posts down to the ground
+      y = -1.9 + r() * 0.75 + row * 0.055;
+    }
+    out.set([x + gauss(r) * 0.02, y, z + gauss(r) * 0.05], i * 3);
+  }
+  return shuffle(out, r);
+}
+
+/** A low ridge of light across the foot of the frame, like irradiance over terrain. */
+export function ridgeWave(count: number) {
+  const r = mulberry32(303);
+  const out = new Float32Array(count * 3);
+  const W = 15, D = 9;
+  for (let i = 0; i < count; i++) {
+    const x = (r() - 0.5) * W;
+    const z = (r() - 0.5) * D - 1.5;
+    const h =
+      Math.sin(x * 0.42) * 0.42 +
+      Math.sin(x * 0.17 + z * 0.3) * 0.5 +
+      Math.cos(z * 0.55) * 0.22;
+    out.set([x, -2.1 + h + gauss(r) * 0.03, z], i * 3);
+  }
+  return shuffle(out, r);
+}
+
+/** A slow spiral with an empty core — where the whole field ends up. */
+export function spiral(count: number) {
+  const r = mulberry32(404);
+  const out = new Float32Array(count * 3);
+  const arms = 3;
+  for (let i = 0; i < count; i++) {
+    const arm = Math.floor(r() * arms);
+    // density falls away from the centre, and the core is left dark
+    const t = 0.22 + Math.pow(r(), 0.65) * 1.0;
+    const a = arm * ((Math.PI * 2) / arms) + t * 5.2 + gauss(r) * 0.12;
+    const rad = t * 4.6;
+    out.set(
+      [Math.cos(a) * rad + gauss(r) * 0.12, gauss(r) * 0.22, Math.sin(a) * rad + gauss(r) * 0.12],
+      i * 3,
+    );
+  }
+  return shuffle(out, r);
+}
