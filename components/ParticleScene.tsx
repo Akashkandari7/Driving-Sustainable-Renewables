@@ -110,8 +110,23 @@ const loadImage = (src: string) =>
     img.src = src;
   });
 
-export default function ParticleScene() {
+export default function ParticleScene({
+  selector = "[data-scene]",
+  theme: forced,
+}: {
+  /** Which sections the field steps through. */
+  selector?: string;
+  /** Follow this instead of the site-wide theme — the cinematic pages run their own
+      dusk and dawn rather than the light and dark switch. */
+  theme?: Theme;
+} = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Held so a change of theme can be applied without rebuilding the whole field.
+  const repaint = useRef<((t: Theme) => void) | null>(null);
+
+  useEffect(() => {
+    if (forced) repaint.current?.(forced);
+  }, [forced]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -164,7 +179,7 @@ export default function ParticleScene() {
         light: PALETTES.light.map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
         dark: PALETTES.dark.map(([a, b]) => [new THREE.Color(a), new THREE.Color(b)]),
       };
-      let theme = currentTheme();
+      let theme = forced ?? currentTheme();
       let colors = swatches[theme];
       const uniforms = {
         uW: { value: [1, 0, 0, 0, 0, 0] },
@@ -222,12 +237,16 @@ export default function ParticleScene() {
         starMat.opacity = dark ? 0.45 : 0.4;
       };
       applyTheme(theme);
+      repaint.current = applyTheme;
 
+      // A page that sets its own theme is not also listening to the site-wide one.
       const onTheme = (e: Event) => applyTheme((e as CustomEvent<Theme>).detail);
-      window.addEventListener(THEME_EVENT, onTheme);
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
       const onSystemTheme = () => applyTheme(currentTheme());
-      systemTheme.addEventListener("change", onSystemTheme);
+      if (!forced) {
+        window.addEventListener(THEME_EVENT, onTheme);
+        systemTheme.addEventListener("change", onSystemTheme);
+      }
 
       // Where the shape sits for each scene: opposite the text on desktop, above it on mobile.
       const offsets = scenes.map((s) =>
@@ -252,7 +271,7 @@ export default function ParticleScene() {
       window.addEventListener("pointermove", onPointer);
 
       // Fractional scene index: 2.5 means the viewport centre is halfway between scene 2 and 3.
-      const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]"));
+      const sections = Array.from(document.querySelectorAll<HTMLElement>(selector));
       const readProgress = () => {
         const vc = window.innerHeight / 2;
         const centers = sections.map((el) => {
@@ -314,8 +333,11 @@ export default function ParticleScene() {
         cancelAnimationFrame(raf);
         window.removeEventListener("resize", resize);
         window.removeEventListener("pointermove", onPointer);
-        window.removeEventListener(THEME_EVENT, onTheme);
-        systemTheme.removeEventListener("change", onSystemTheme);
+        repaint.current = null;
+        if (!forced) {
+          window.removeEventListener(THEME_EVENT, onTheme);
+          systemTheme.removeEventListener("change", onSystemTheme);
+        }
         geometry.dispose();
         material.dispose();
         starGeo.dispose();

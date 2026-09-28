@@ -1501,3 +1501,59 @@
     transition: opacity 0.85s cubic-bezier(0.3, 0.7, 0.2, 1), transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
+
+/* ---------- the particle sky ---------- */
+
+/* The home page swaps the photographs for the particle field, so it needs a sky of its own.
+   It sits below the field, which the shared stylesheet already puts at z-index 1. */
+.cine__sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 50% 108%, rgba(52, 211, 153, 0.1), transparent 70%),
+    radial-gradient(60% 50% at 76% 18%, rgba(56, 96, 160, 0.26), transparent 72%),
+    linear-gradient(180deg, #060a12 0%, #071019 55%, #04070c 100%);
+  transition: background 0.8s ease;
+}
+
+/* Dawn turns the sky to daylight. The chrome and headings on these pages already go dark in
+   dawn, and the field switches to its deeper inks, so the whole page reads as morning. */
+.cine[data-mode="dawn"] .cine__sky {
+  background:
+    radial-gradient(62% 50% at 50% 104%, rgba(255, 186, 112, 0.5), transparent 72%),
+    radial-gradient(58% 48% at 74% 12%, rgba(255, 214, 170, 0.55), transparent 70%),
+    linear-gradient(180deg, #fdf3e8 0%, #f6eadd 48%, #eadfd4 100%);
+}
+
+/* The field is fixed to the window like the plates it replaces. */
+.cine .particles {
+  z-index: 1;
+}
+
+/* The scrim behind the copy exists to hold type over a photograph. The particle page has no
+   photograph, so it only leaves a grey smear across the sky. */
+.cine:has(.cine__sky) .cine__act::before {
+  display: none;
+}
+
+/* With the scrim gone, dawn's daylight sky needs the copy in ink rather than in white. */
+.cine[data-mode="dawn"]:has(.cine__sky) h1,
+.cine[data-mode="dawn"]:has(.cine__sky) h2,
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__lead,
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__body,
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__flow,
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__tags {
+  color: var(--paper-ink);
+  -webkit-text-fill-color: var(--paper-ink);
+}
+
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__eyebrow {
+  color: rgba(13, 23, 19, 0.66);
+}
+
+/* the cards keep their own paper, just a touch more solid against the bright sky */
+.cine[data-mode="dawn"]:has(.cine__sky) .cine__card {
+  background: rgba(255, 255, 255, 0.72);
+}

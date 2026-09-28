@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import CinemaScene, { type CinemaShot } from "@/components/CinemaScene";
+import CineParticles from "@/components/CineParticles";
 import CineHeading from "@/components/CineHeading";
 import { home } from "@/lib/dsr";
 
@@ -10,22 +10,16 @@ export const metadata: Metadata = {
 };
 
 // One plate per act; the same three photographs, framed differently so the scroll reads as a camera move.
-const shots: CinemaShot[] = [
-  { plate: "hybrid", zoom: 1.05, focus: [0.04, 0], dim: 0.36, move: "push", sun: [0.72, 0.3] },
-  { plate: "farm-mist", zoom: 1.1, focus: [0.08, 0], dim: 0.44, move: "panLeft", sun: [0.6, 0.28] },
-  { plate: "walk-row", zoom: 1.12, focus: [0.1, 0.02], dim: 0.48, move: "panRight", sun: [0.3, 0.2] },
-  { plate: "module-check", zoom: 1.08, focus: [0.12, 0.02], dim: 0.5, move: "tiltUp", sun: [0.8, 0.25] },
-  { plate: "drawing", zoom: 1.1, focus: [0.14, 0.02], dim: 0.5, move: "push", sun: [0.72, 0.18] },
-  { plate: "aerial", zoom: 1.08, focus: [-0.06, 0], dim: 0.46, move: "panLeft", sun: [0.85, 0.2] },
-  { plate: "horizon", zoom: 1.06, focus: [0.04, 0], dim: 0.48, move: "pullBack", sun: [0.55, 0.35] },
-];
 
 export default function Home() {
   const { hero, promise, whatWeDo, approach, why, sectors } = home;
 
   return (
     <>
-      <CinemaScene shots={shots} />
+      {/* The client asked that the pages not all read the same way: the home page is the
+          particle field, while the services page keeps the camera moving through photographs. */}
+      <div className="cine__sky" aria-hidden="true" />
+      <CineParticles />
 
       <main>
         <section data-shot data-label="Site" className="cine__act cine__act--hero">
