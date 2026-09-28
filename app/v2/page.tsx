@@ -23,7 +23,7 @@ export default function Home() {
       <CineParticles />
 
       <main>
-        <section data-shot data-label="Site" className="cine__act cine__act--hero">
+        <section data-shot data-label="Site" className="cine__act cine__act--hero cine__act--centred">
           <div className="cine__copy reveal">
             <p className="cine__eyebrow">{hero.eyebrow}</p>
             <CineHeading as="h1" text={hero.title[0]} accent={hero.title[1]} />

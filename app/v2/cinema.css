@@ -1638,3 +1638,76 @@
 .cine[data-mode="dawn"] .cine__canvas {
   background: #f3ece3;
 }
+
+/* The opening stands inside the ring rather than beside it, so the copy is centred in the
+   hollow middle the way the reference sets it. */
+.cine__act--centred {
+  text-align: center;
+}
+
+.cine__act--centred .cine__copy {
+  max-width: 54rem;
+  margin: 0 auto;
+}
+
+.cine__act--centred .cine__eyebrow {
+  justify-content: center;
+  display: inline-flex;
+  padding: 7px 16px 7px 14px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: rgba(8, 14, 22, 0.55);
+}
+
+/* the rule that normally trails the eyebrow would run off to one side here */
+.cine__act--centred .cine__eyebrow::after {
+  display: none;
+}
+
+.cine__act--centred .cine__lead,
+.cine__act--centred .cine__body {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cine__act--centred .cine__actions {
+  justify-content: center;
+}
+
+/* the notes move out to the corners, clear of the centred column */
+.cine__act--centred .cine__notes {
+  text-align: left;
+}
+
+/* Inside the ring the copy has a circle to live in, not a column, so it is set smaller and
+   narrower than it would be against a photograph. */
+.cine__act--centred .cine__copy {
+  max-width: 42rem;
+}
+
+.cine__act--centred h1 {
+  font-size: clamp(2.1rem, 4.2vw, 3.7rem);
+}
+
+.cine__act--centred .cine__lead {
+  max-width: 34rem;
+  font-size: 15px;
+}
+
+.cine__act--centred .cine__body {
+  max-width: 36rem;
+  font-size: 13.5px;
+  opacity: 0.8;
+}
+
+/* out to the corners, clear of the ring's bright rim */
+.cine__act--centred .cine__notes article:first-child {
+  top: 9%;
+  right: auto;
+  left: 3%;
+}
+
+.cine__act--centred .cine__notes article:last-child {
+  bottom: 8%;
+  right: 3%;
+}

@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import ParticleScene from "@/components/ParticleScene";
 import type { Mode } from "@/components/CineMode";
-import { panelField, ridgeWave, spiral, strandOrb, sun } from "@/lib/shapes";
+import { FORMS } from "@/lib/era";
 
 /* The field on the cinematic home page.
 
-   Where the other concept shows a figure per section — an object seen from outside — this one
-   is a place the visitor travels through: an orb of strands to open on, then rows of panels
-   running to the horizon, a ridge of light along the foot of the frame, and a slow spiral to
-   end on. The colour runs across the body rather than being scattered through it, so the swarm
-   reads as one thing lit from one side. */
-const FORMS = [strandOrb, sun, panelField, ridgeWave, spiral, spiral];
+   Every form is the same sheet of panels bent a different way — a ring to open on, the drum you
+   pass through, rows running to the horizon, a ripple, and a spiral to end on. The ring is
+   hollow, so the copy sits in the dark middle of it. */
 
 /* Blue on one hand, solar orange on the other, warming as the journey goes on. */
 const NIGHT: [string, string][] = [
