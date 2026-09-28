@@ -1,0 +1,16 @@
+# Cloudflare Pages reads this at deploy time. GitHub Pages ignores it, so the file is
+# harmless on either host.
+
+# Next's own bundles carry a content hash in the filename, so they can be held forever.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The models, their decoder and the photography keep their names between builds, so they
+# are cached for a day rather than for good — long enough to matter on a repeat visit,
+# short enough that a replaced file is picked up.
+/models/*
+  Cache-Control: public, max-age=86400
+/draco/*
+  Cache-Control: public, max-age=86400
+/images/*
+  Cache-Control: public, max-age=86400
