@@ -176,20 +176,22 @@ export default function BrewHome() {
           </ol>
         </section>
 
-        <section className="brew-block reveal brew-block--withobject">
-          <figure className="is-subject brew-block__object">
+        <section className="brew-sectors-split reveal">
+          <figure className="is-subject">
             <BrewModel name="weather" label="A plant weather monitoring station">
               <BrewSubject name="plan" label="" />
             </BrewModel>
           </figure>
+          <div>
           <p className="brew-eyebrow">// {sectors.eyebrow}</p>
-          <div className="brew-sectors">
+          <div className="brew-sectors brew-sectors--column">
             {sectors.items.map((s) => (
               <article key={s.name}>
                 <h3>{s.name}</h3>
                 <p>{s.tags.join(" · ")}</p>
               </article>
             ))}
+          </div>
           </div>
         </section>
 

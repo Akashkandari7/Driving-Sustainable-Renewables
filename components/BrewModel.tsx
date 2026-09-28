@@ -33,31 +33,33 @@ export type ModelName =
   | "tester";
 
 /** Breathing room left around each object once it is fitted, as a multiple of its radius.
-    A little more for the long, thin subjects so they do not fill the frame edge to edge. */
+    The fit is to the bounding sphere, which is the worst case for a shape that is not round —
+    so these sit close to 1, or a flat subject like the drawings ends up marooned in its frame.
+    Only the long, thin ones get a little more. */
 const MARGIN: Record<ModelName, number> = {
-  module: 1.16,
-  rack: 1.12,
-  container: 1.18,
-  inverter: 1.12,
-  wafer: 1.1,
-  crate: 1.14,
-  tracker: 1.2,
-  bench: 1.14,
-  transformer: 1.14,
-  report: 1.14,
-  combiner: 1.12,
-  cell: 1.1,
-  weather: 1.22,
-  thermal: 1.12,
-  pallet: 1.14,
-  tester: 1.12,
+  module: 1.0,
+  rack: 1.0,
+  container: 1.04,
+  inverter: 1.0,
+  wafer: 0.98,
+  crate: 1.02,
+  tracker: 1.06,
+  bench: 0.96,
+  transformer: 1.0,
+  report: 0.98,
+  combiner: 1.0,
+  cell: 0.98,
+  weather: 1.06,
+  thermal: 0.98,
+  pallet: 1.0,
+  tester: 0.96,
 };
 
 /* A browser only tolerates a handful of WebGL contexts at once, and the services page carries
    seven objects. So the scenes are pooled. The rule that matters: a subject the visitor can
    actually see is never retired to make room for another one — only the ones off screen are,
    and a host that is still wanted is rebuilt as soon as room frees up. */
-const LIVE_LIMIT = 4;
+const LIVE_LIMIT = 3;
 
 type Host = {
   el: HTMLElement;
@@ -78,6 +80,8 @@ const gap = (el: HTMLElement) => {
   return r.top >= h ? r.top - h : -r.bottom;
 };
 
+let scrolling = false;
+
 const schedule = () => {
   // Anything that has scrolled well away goes first.
   hosts.forEach((h) => {
@@ -91,6 +95,8 @@ const schedule = () => {
   const pending = hosts.filter((h) => h.wanted && !h.live).sort((a, b) => gap(a.el) - gap(b.el));
 
   for (const h of pending) {
+    // Never start a build while the page is moving.
+    if (scrolling) break;
     if (count >= LIVE_LIMIT) {
       const furthest = hosts.filter((x) => x.live).sort((a, b) => gap(b.el) - gap(a.el))[0];
       // Only give up a scene that is further away than the one asking for room. Two subjects
@@ -114,8 +120,12 @@ if (typeof window !== "undefined") {
   window.addEventListener(
     "scroll",
     () => {
+      scrolling = true;
       clearTimeout(settleAll);
-      settleAll = window.setTimeout(schedule, 160);
+      settleAll = window.setTimeout(() => {
+        scrolling = false;
+        schedule();
+      }, 180);
     },
     { passive: true },
   );

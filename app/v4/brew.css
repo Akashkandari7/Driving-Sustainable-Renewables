@@ -412,13 +412,13 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--hair);
-  border: 1px solid var(--hair);
+  gap: 0;
 }
 
 .brew-stages li {
-  background: var(--bg);
+  border: 1px solid var(--hair);
+  /* pulled onto the neighbour so touching borders read as one line */
+  margin: 0 -1px -1px 0;
   padding: 26px 24px 30px;
 }
 
@@ -501,13 +501,13 @@
 .brew-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 1px;
-  background: var(--hair);
-  border: 1px solid var(--hair);
+  gap: 0;
 }
 
 .brew-grid article {
-  background: var(--bg);
+  border: 1px solid var(--hair);
+  /* pulled onto the neighbour so touching borders read as one line */
+  margin: 0 -1px -1px 0;
   padding: 26px 24px 30px;
 }
 
@@ -567,13 +567,13 @@
 .brew-sectors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1px;
-  background: var(--hair);
-  border: 1px solid var(--hair);
+  gap: 0;
 }
 
 .brew-sectors article {
-  background: var(--bg);
+  border: 1px solid var(--hair);
+  /* pulled onto the neighbour so touching borders read as one line */
+  margin: 0 -1px -1px 0;
   padding: 24px;
 }
 
@@ -827,14 +827,14 @@
 .brew-service__groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1px;
-  background: var(--hair);
-  border: 1px solid var(--hair);
+  gap: 0;
   align-content: start;
 }
 
 .brew-service__groups > div {
-  background: var(--bg);
+  border: 1px solid var(--hair);
+  /* pulled onto the neighbour so touching borders read as one line */
+  margin: 0 -1px -1px 0;
   padding: 22px 22px 26px;
 }
 
@@ -1183,6 +1183,14 @@
   aspect-ratio: 5 / 4;
 }
 
+/* Beside a column of copy there is height to spare, so the object gets a squarer frame and
+   fills far more of it. */
+.brew-split figure .brew-model,
+.brew-sectors-split figure .brew-model,
+.brew-top__object .brew-model {
+  aspect-ratio: 1 / 1;
+}
+
 @media (max-width: 780px) {
   .brew-model {
     aspect-ratio: 1 / 1;
@@ -1207,14 +1215,30 @@
   position: relative;
 }
 
+.brew-sectors-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: clamp(30px, 5vw, 70px);
+  padding: clamp(80px, 12vw, 160px) var(--pad);
+  border-top: 1px solid var(--hair);
+}
+
+.brew-sectors-split figure {
+  margin: 0;
+}
+
+/* stacked, so the list reads as a column beside the subject */
+.brew-sectors--column {
+  grid-template-columns: 1fr;
+}
+
 .brew-block__object {
-  max-width: 420px;
   margin: 0 0 12px;
 }
 
 .brew-contact__object {
   margin: 34px 0 0;
-  max-width: 360px;
 }
 
 @media (max-width: 900px) {
@@ -1222,8 +1246,7 @@
     order: 0;
   }
 
-  .brew-block__object,
-  .brew-contact__object {
-    max-width: 100%;
+  .brew-sectors-split {
+    grid-template-columns: 1fr;
   }
 }
