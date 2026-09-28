@@ -246,7 +246,7 @@ export default function BrewModel({
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
       // Capped at 1.5: a turntable gains nothing from a full retina buffer and costs a lot.
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.5;
       renderer.domElement.className = "brew-model__canvas";
@@ -491,7 +491,15 @@ export default function BrewModel({
     <div
       ref={host}
       className={`brew-model is-${state}`}
-      style={{ aspectRatio: String(FRAME[name]) }}
+      /* Height is capped as a share of the window, and the width follows from the object's
+         own proportions. Without the cap an upright subject in a wide column grew taller
+         than the window itself: too large to read as one object, and a canvas that size is
+         also what made turning it stutter. */
+      style={{
+        aspectRatio: String(FRAME[name]),
+        maxWidth: `calc(52vh * ${FRAME[name]})`,
+        marginInline: "auto",
+      }}
       data-model={name}
       role="img"
       aria-label={`${label}. Drag to turn it.`}
