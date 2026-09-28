@@ -24,14 +24,5 @@ export default function CineParticles() {
     return () => window.removeEventListener("cinemode", onMode);
   }, []);
 
-  return (
-    <ParticleScene
-      selector="[data-shot]"
-      /* One per figure, in the order they are stepped through: sun, panel, battery, bolt,
-         network, globe. The battery sits on the left and its section moves its copy across,
-         so the page is not a single column with a figure always to one side of it. */
-      sides={["right", "right", "left", "right", "right", "right"]}
-      theme={mode === "dusk" ? "dark" : "light"}
-    />
-  );
+  return <ParticleScene selector="[data-shot]" field="right" theme={mode === "dusk" ? "dark" : "light"} />;
 }

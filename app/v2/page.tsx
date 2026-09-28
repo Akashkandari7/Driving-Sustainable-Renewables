@@ -60,7 +60,7 @@ export default function Home() {
           </ol>
         </section>
 
-        <section data-shot data-figure="left" data-label="What We Do" className="cine__act">
+        <section data-shot data-label="What We Do" className="cine__act">
           <div className="cine__copy reveal">
             <p className="cine__eyebrow">{whatWeDo.eyebrow}</p>
             <CineHeading text={whatWeDo.title} />

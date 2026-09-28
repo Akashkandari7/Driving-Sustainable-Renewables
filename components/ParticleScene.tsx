@@ -114,7 +114,6 @@ export default function ParticleScene({
   selector = "[data-scene]",
   theme: forced,
   field,
-  sides,
 }: {
   /** Which sections the field steps through. */
   selector?: string;
@@ -122,8 +121,6 @@ export default function ParticleScene({
       it was written for puts its copy left and right by turns; the cinematic pages keep
       their copy on the left throughout, so the figures belong on the right every time. */
   field?: "left" | "right";
-  /** A side per figure, when some sections want the field on the other hand. Overrides `field`. */
-  sides?: ("left" | "right")[];
   /** Follow this instead of the site-wide theme — the cinematic pages run their own
       dusk and dawn rather than the light and dark switch. */
   theme?: Theme;
@@ -259,10 +256,9 @@ export default function ParticleScene({
       }
 
       // Where the shape sits for each scene: opposite the text on desktop, above it on mobile.
-      const offsets = scenes.map((s, i) => {
+      const offsets = scenes.map((s) => {
         if (mobile) return { x: 0, y: 2.1 };
-        const pinned = sides?.[i] ?? field;
-        if (pinned) return { x: pinned === "right" ? 3.2 : -3.2, y: 0.25 };
+        if (field) return { x: field === "right" ? 3.1 : -3.1, y: 0.25 };
         return { x: s.side === "left" ? 2.5 : -2.5, y: 0.25 };
       });
       group.scale.setScalar(mobile ? 0.38 : 1);
