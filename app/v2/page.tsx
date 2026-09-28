@@ -19,6 +19,7 @@ export default function Home() {
       {/* The client asked that the pages not all read the same way: the home page is the
           particle field, while the services page keeps the camera moving through photographs. */}
       <div className="cine__sky" aria-hidden="true" />
+      <div className="cine__grid-lines" aria-hidden="true" />
       <CineParticles />
 
       <main>
@@ -36,6 +37,17 @@ export default function Home() {
                 </Link>
               ))}
             </div>
+          </div>
+
+          <div className="cine__notes reveal" aria-hidden="true">
+            <article>
+              <p className="cine__note-label">Projects supported</p>
+              <p>Across solar and storage portfolios, from planning through to handover.</p>
+            </article>
+            <article>
+              <p className="cine__note-label">Capacity verified</p>
+              <p>Modules, cells and battery energy storage inspected against specification.</p>
+            </article>
           </div>
         </section>
 
