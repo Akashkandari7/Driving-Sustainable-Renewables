@@ -114,6 +114,7 @@ export default function ParticleScene({
   selector = "[data-scene]",
   theme: forced,
   field,
+  sides,
 }: {
   /** Which sections the field steps through. */
   selector?: string;
@@ -121,6 +122,8 @@ export default function ParticleScene({
       it was written for puts its copy left and right by turns; the cinematic pages keep
       their copy on the left throughout, so the figures belong on the right every time. */
   field?: "left" | "right";
+  /** A side per figure, when some sections want the field on the other hand. Overrides `field`. */
+  sides?: ("left" | "right")[];
   /** Follow this instead of the site-wide theme — the cinematic pages run their own
       dusk and dawn rather than the light and dark switch. */
   theme?: Theme;
@@ -150,9 +153,11 @@ export default function ParticleScene({
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const mobile = window.innerWidth < 820;
-      const N = mobile ? 9000 : 30000;
+      const N = mobile ? 9000 : 20000;
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // A full-window field of soft points gains nothing from a retina buffer and pays for
+      // every pixel of it, twice over on a scaled display.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
       camera.position.z = 9;
@@ -254,9 +259,10 @@ export default function ParticleScene({
       }
 
       // Where the shape sits for each scene: opposite the text on desktop, above it on mobile.
-      const offsets = scenes.map((s) => {
+      const offsets = scenes.map((s, i) => {
         if (mobile) return { x: 0, y: 2.1 };
-        if (field) return { x: field === "right" ? 3.1 : -3.1, y: 0.25 };
+        const pinned = sides?.[i] ?? field;
+        if (pinned) return { x: pinned === "right" ? 3.2 : -3.2, y: 0.25 };
         return { x: s.side === "left" ? 2.5 : -2.5, y: 0.25 };
       });
       group.scale.setScalar(mobile ? 0.38 : 1);

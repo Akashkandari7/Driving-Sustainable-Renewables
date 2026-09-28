@@ -1557,3 +1557,38 @@
 .cine[data-mode="dawn"]:has(.cine__sky) .cine__card {
   background: rgba(255, 255, 255, 0.72);
 }
+
+/* On the particle page the figure shares the window with the copy rather than sitting behind
+   a photograph, so the copy keeps to its own share and leaves the figure a clear column. */
+.cine:has(.cine__sky) .cine__copy,
+.cine:has(.cine__sky) .cine__grid,
+.cine:has(.cine__sky) .cine__pillars,
+.cine:has(.cine__sky) .cine__stages,
+.cine:has(.cine__sky) .cine__ticks,
+.cine:has(.cine__sky) .cine__actions,
+.cine:has(.cine__sky) .cine__tags {
+  max-width: min(1000px, 60%);
+}
+
+/* and where the figure is on the left, the copy moves across to meet it */
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__copy,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__grid,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__pillars,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__stages,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__ticks,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__actions,
+.cine:has(.cine__sky) .cine__act[data-figure="left"] .cine__tags {
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .cine:has(.cine__sky) .cine__copy,
+  .cine:has(.cine__sky) .cine__grid,
+  .cine:has(.cine__sky) .cine__pillars,
+  .cine:has(.cine__sky) .cine__stages,
+  .cine:has(.cine__sky) .cine__ticks,
+  .cine:has(.cine__sky) .cine__actions,
+  .cine:has(.cine__sky) .cine__tags {
+    max-width: 100%;
+  }
+}

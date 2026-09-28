@@ -235,14 +235,16 @@ export default function CinemaScene({ shots }: { shots: CinemaShot[] }) {
     const init = async () => {
       let renderer: THREE.WebGLRenderer;
       try {
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
       } catch {
         document.documentElement.classList.add("no-webgl");
         return;
       }
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // Same reasoning as the particle field: this fills the window, and photography has no
+      // hard edges for the extra pixels to sharpen.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       renderer.setClearColor(0x05070b, 1);
 
       const scene = new THREE.Scene();

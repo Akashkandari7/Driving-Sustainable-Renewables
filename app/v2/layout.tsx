@@ -13,7 +13,10 @@ export default function CinemaLayout({ children }: { children: React.ReactNode }
       <script
         dangerouslySetInnerHTML={{
           __html:
-            "(function(){try{var m=localStorage.getItem('dsr-cine-mode');if(m==='dusk'||m==='dawn'){var e=document.currentScript&&document.currentScript.parentElement;if(e)e.dataset.mode=m;}}catch(e){}})();",
+            "(function(){var e=document.currentScript&&document.currentScript.parentElement;if(!e)return;"+
+            /* the home page is always night, whatever was chosen elsewhere */
+            "var p=location.pathname.replace(/\/+$/,'');if(/\/v2$/.test(p)||p===''){e.dataset.mode='dusk';return;}"+
+            "try{var m=localStorage.getItem('dsr-cine-mode');if(m==='dusk'||m==='dawn'){e.dataset.mode=m;}}catch(e2){}})();",
         }}
       />
       <CineNav />
