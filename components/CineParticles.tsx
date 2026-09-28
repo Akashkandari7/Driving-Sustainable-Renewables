@@ -24,5 +24,5 @@ export default function CineParticles() {
     return () => window.removeEventListener("cinemode", onMode);
   }, []);
 
-  return <ParticleScene selector="[data-shot]" theme={mode === "dusk" ? "dark" : "light"} />;
+  return <ParticleScene selector="[data-shot]" field="right" theme={mode === "dusk" ? "dark" : "light"} />;
 }
